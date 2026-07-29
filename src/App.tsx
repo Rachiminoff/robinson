@@ -16,7 +16,6 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('bilingual');
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [showCountdown, setShowCountdown] = useState<boolean>(false);
-  const [showGrid, setShowGrid] = useState<boolean>(false); // Keep state if needed elsewhere
   const [showMetadata, setShowMetadata] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [showKeyboardHint, setShowKeyboardHint] = useState<boolean>(true);

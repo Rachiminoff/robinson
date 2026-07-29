@@ -1,5 +1,3 @@
-// src/components/SettingsPanel.tsx
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -11,16 +9,14 @@ import {
   Layout, 
   RefreshCw,
   Eye,
-  EyeOff,
   Play,
   Layers,
   Moon,
   Sun,
   AlignLeft,
   Grid,
-  ChevronDown,
 } from 'lucide-react';
-import { useSettings, FontStyle, LanguagePreference, AnimationSpeed, LayoutStyle, FontFamily, FontWeight, FontSize } from '../context/SettingsContext';
+import { useSettings, LanguagePreference, AnimationSpeed, FontFamily, FontWeight, FontSize } from '../context/SettingsContext';
 
 interface SettingsPanelProps {
   isOpen: boolean;

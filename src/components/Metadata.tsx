@@ -113,7 +113,6 @@ const Metadata: React.FC<MetadataProps> = ({ visible, currentTime, onExit }) => 
   if (!shouldShowMetadata || isMobile) return null;
 
   const offsetX = (mouse.normalizedX - 0.5) * 8;
-  const offsetY = (mouse.normalizedY - 0.5) * 4;
 
   return (
     <>

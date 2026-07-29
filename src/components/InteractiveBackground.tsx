@@ -1,6 +1,4 @@
-// src/components/InteractiveBackground.tsx
-
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion, useSpring, AnimatePresence } from 'framer-motion';
 import { useMouseTracking } from '../hooks/useMouseTracking';
 import { GeometryConfig } from '../types/composition';
@@ -94,7 +92,6 @@ const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({
 
     // Calculate animated values
     const animX = x.get() * (0.3 + index * 0.02);
-    const animY = y.get() * (0.3 + index * 0.02) + Math.sin(currentTime / (4 * speedMultiplier) + index * 1.5) * offset.y * 0.5;
     const animScale = scale.get() * (1 + Math.sin(currentTime / (4 * speedMultiplier) + index * 1.5) * 0.025);
 
     switch (shape.type) {
@@ -137,7 +134,6 @@ const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({
         
       case 'rectangle':
         const rectAnimX = x.get() * (0.4 + index * 0.015);
-        const rectAnimY = y.get() * (0.4 + index * 0.015) + Math.sin(currentTime / (6 * speedMultiplier) + index * 0.8) * offset.y * 0.3;
         const rectAnimRotate = shape.rotation + Math.sin(currentTime / (6 * speedMultiplier) + index * 0.8) * 3 + rotate.get();
         const rectAnimScale = scale.get() * (1 + Math.sin(currentTime / (5 * speedMultiplier) + index * 0.7) * 0.02);
         
@@ -154,7 +150,7 @@ const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({
               scale: rectAnimScale,
               rotate: rectAnimRotate,
               x: rectAnimX,
-              y: rectAnimY,
+              y: y.get() * (0.4 + index * 0.015) + Math.sin(currentTime / (6 * speedMultiplier) + index * 0.8) * offset.y * 0.3,
             }}
             exit={{
               opacity: 0,
@@ -179,7 +175,6 @@ const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({
         
       case 'triangle':
         const triAnimX = x.get() * (0.2 + index * 0.03);
-        const triAnimY = y.get() * (0.2 + index * 0.03) + Math.sin(currentTime / (5 * speedMultiplier) + index * 1.2) * offset.y * 0.4;
         const triAnimRotate = shape.rotation + Math.sin(currentTime / (5 * speedMultiplier) + index * 1.2) * 4 + rotate.get() * 0.5;
         const triAnimScale = scale.get() * (1 + Math.sin(currentTime / (3.5 * speedMultiplier) + index * 0.9) * 0.025);
         
@@ -222,7 +217,6 @@ const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({
         
       case 'line':
         const lineAnimX = x.get() * (0.2 + index * 0.04);
-        const lineAnimY = y.get() * (0.2 + index * 0.04) + Math.sin(currentTime / (8 * speedMultiplier) + index * 0.5) * offset.y * 0.2;
         const lineAnimRotate = shape.rotation + Math.sin(currentTime / (8 * speedMultiplier) + index * 0.5) * 1.5 + rotate.get() * 0.3;
         const lineAnimScaleX = scale.get() * (1 + Math.sin(currentTime / (6 * speedMultiplier) + index * 0.6) * 0.04);
         
@@ -238,7 +232,7 @@ const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({
               opacity: opacity * 1.2,
               scaleX: lineAnimScaleX,
               x: lineAnimX,
-              y: lineAnimY,
+              y: y.get() * (0.2 + index * 0.04) + Math.sin(currentTime / (8 * speedMultiplier) + index * 0.5) * offset.y * 0.2,
               rotate: lineAnimRotate,
             }}
             exit={{

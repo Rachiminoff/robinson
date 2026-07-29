@@ -1,7 +1,5 @@
-// src/components/Controls.tsx
-
-import React, { useState, useEffect } from 'react';
-import { motion, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, useSpring, AnimatePresence } from 'framer-motion';
 import {
   Play,
   Pause,
@@ -13,7 +11,6 @@ import {
   EyeOff,
   Settings,
 } from 'lucide-react';
-import { useMouseTracking } from '../hooks/useMouseTracking';
 import SettingsPanel from './SettingsPanel';
 
 interface ControlsProps {
@@ -39,11 +36,10 @@ const Controls: React.FC<ControlsProps> = ({
   isFullscreen = false,
   onVisibilityToggle,
 }) => {
-  const mouse = useMouseTracking();
   const [isHovered, setIsHovered] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
   const x = useSpring(0, { damping: 25, stiffness: 100 });
@@ -58,6 +54,15 @@ const Controls: React.FC<ControlsProps> = ({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Toggle visibility with useCallback to stabilize the function reference
+  const toggleVisibility = useCallback(() => {
+    setIsVisible(prev => {
+      const newValue = !prev;
+      onVisibilityToggle?.(newValue);
+      return newValue;
+    });
+  }, [onVisibilityToggle]);
 
   // Keyboard shortcut for toggling visibility (Ctrl/Cmd + H)
   useEffect(() => {
@@ -75,23 +80,30 @@ const Controls: React.FC<ControlsProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isVisible]);
+  }, [toggleVisibility]);
 
   // Auto-hide on PC when not hovering
   useEffect(() => {
+    // Clear any existing timeout
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+
     if (!isMobile && !isHovered) {
-      if (hideTimeout) clearTimeout(hideTimeout);
-      const timeout = setTimeout(() => {
+      hideTimeoutRef.current = setTimeout(() => {
         setIsVisible(false);
         onVisibilityToggle?.(false);
       }, 3000);
-      setHideTimeout(timeout);
-    } else {
-      if (hideTimeout) {
-        clearTimeout(hideTimeout);
-        setHideTimeout(null);
-      }
     }
+
+    // Cleanup timeout on unmount or when dependencies change
+    return () => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
+    };
   }, [isHovered, isMobile, onVisibilityToggle]);
 
   // Show controls on mouse movement on PC
@@ -105,11 +117,6 @@ const Controls: React.FC<ControlsProps> = ({
       return () => window.removeEventListener('mousemove', handleMouseMove);
     }
   }, [isMobile, onVisibilityToggle]);
-
-  const toggleVisibility = () => {
-    setIsVisible(!isVisible);
-    onVisibilityToggle?.(!isVisible);
-  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

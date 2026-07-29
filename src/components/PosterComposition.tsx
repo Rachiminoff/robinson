@@ -1,5 +1,3 @@
-// src/components/PosterComposition.tsx
-
 import React, { useMemo, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { lyricsData } from '../data/lyrics';
@@ -65,9 +63,8 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   viewMode,
   isPlaying 
 }) => {
-  const { settings, getFontFamily, getFontWeight, getFontSize } = useSettings();
+  const { settings, getFontFamily, getFontWeight } = useSettings();
   const [isMobile, setIsMobile] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [previousIndex, setPreviousIndex] = useState<number>(-1);
 
   // Check if mobile on mount and resize
@@ -104,7 +101,8 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     if (!currentLyric) return null;
     
     const { index } = currentLyric;
-    const total = lyricsData.length;
+    // Remove unused total variable
+    // const total = lyricsData.length;
     
     // Cycle through patterns to ensure variety
     const patterns: CompositionPattern[] = [
@@ -208,7 +206,8 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   if (!currentLyric || !composition || !bgConfig || !compositionConfig) return null;
 
   const { lyric, index } = currentLyric;
-  const { pattern, animation, mood, emphasis, layout, metadata } = compositionConfig;
+  // Remove unused layout from destructuring
+  const { pattern, animation, mood, emphasis, metadata } = compositionConfig;
   
   // Apply settings to determine what to show
   const shouldShowJapanese = settings.languagePreference === 'japanese' || settings.languagePreference === 'bilingual';
@@ -225,7 +224,8 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   // Get font family from settings
   const fontFamily = getFontFamily();
   const fontWeight = getFontWeight();
-  const fontSizeClass = getFontSize();
+  // Remove unused fontSize - it's applied through the className system
+  // const fontSizeClass = getFontSize();
 
   // Get scale based on pattern and emphasis
   const getJapaneseScale = () => {
@@ -440,7 +440,8 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   // Animation variants based on style
   const getAnimationVariants = (type: 'japanese' | 'english') => {
     const isJapanese = type === 'japanese';
-    const progress = (currentTime - lyric.start) / (lyric.end - lyric.start || 1);
+    // Remove unused progress variable
+    // const progress = (currentTime - lyric.start) / (lyric.end - lyric.start || 1);
     
     // If animations are disabled, return simple fade
     if (!settings.enableAnimations) {
@@ -657,9 +658,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     const isJapanese = type === 'japanese';
     const isPrimary = emphasis === 'japanese' ? isJapanese : !isJapanese;
     
-    // Apply font size from settings
-    const fontSize = fontSizeClass;
-    
     if (isJapanese) {
       return {
         ...(isPrimary ? {} : {}),
@@ -785,8 +783,9 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   return (
     <div 
       className="fixed inset-0 z-10 overflow-hidden"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      // Remove unused onMouseEnter/onMouseLeave
+      // onMouseEnter={() => setIsHovered(true)}
+      // onMouseLeave={() => setIsHovered(false)}
     >
       {/* Background - respect showBackground setting */}
       {settings.showBackground && (
@@ -800,7 +799,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
       {/* Subtle noise overlay - respect showBackground */}
       {settings.showBackground && (
         <div className="absolute inset-0 pointer-events-none opacity-[0.015] z-5">
-        <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJmIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iLjc1IiBudW1PY3RhdmVzPSI0IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2YpIiBvcGFjaXR5PSIwLjUiLz48L3N2Zz4=')] bg-repeat bg-[length:300px_300px]" />
+          <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJmIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iLjc1IiBudW1PY3RhdmVzPSI0IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2YpIiBvcGFjaXR5PSIwLjUiLz48L3N2Zz4=')] bg-repeat bg-[length:300px_300px]" />
         </div>
       )}
       
