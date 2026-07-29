@@ -796,13 +796,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
         />
       )}
       
-      {/* Subtle noise overlay - respect showBackground */}
-      {settings.showBackground && (
-        <div className="absolute inset-0 pointer-events-none opacity-[0.015] z-5">
-          <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJmIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iLjc1IiBudW1PY3RhdmVzPSI0IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2YpIiBvcGFjaXR5PSIwLjUiLz48L3N2Zz4=')] bg-repeat bg-[length:300px_300px]" />
-        </div>
-      )}
-      
       {/* Content Layer */}
       <div className={`absolute inset-0 flex items-center justify-center z-10 ${
         isMobile ? 'px-4 py-16' : 'px-8 md:px-16'

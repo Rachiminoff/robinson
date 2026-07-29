@@ -690,21 +690,7 @@ const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({
             transition: 'background 1.2s cubic-bezier(0.22, 1, 0.36, 1)'
           }} 
         />
-        
-        {/* Paper texture with fade-in */}
-        <motion.div 
-          className="absolute inset-0 pointer-events-none" 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.015 }}
-          transition={{ duration: 1.5, delay: 0.3 }}
-        >
-          <div className="w-full h-full" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-            backgroundSize: '256px 256px',
-            backgroundRepeat: 'repeat',
-          }} />
-        </motion.div>
-        
+      
         {/* Swiss Grid with fade-in */}
         <motion.div 
           className="absolute inset-0 pointer-events-none" 
