@@ -1,62 +1,70 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ExternalLink, Calendar, Music, User, Mic, Clock, Disc, Tag, Award, Info, Heart, Zap } from 'lucide-react';
+import { X, Calendar, Music, User, Mic, Clock, Disc, Tag, Award, Info, Heart, Zap } from 'lucide-react';
+import metadataData from '../data/metadata.json';
 
 interface SongInfoModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface SongInfo {
-  title: string;
-  japaneseTitle: string;
+// Interface matching the exact JSON structure
+interface SongMetadata {
   artist: string;
-  album: string;
-  year: string;
-  released: string;
-  track: string;
-  duration: string;
+  artistCountry: string;
+  title: string;
+  year: number;
+  trackNumber: string;
+  duration: number;
   label: string;
-  writers: string;
-  producers: string;
-  recorded: string;
-  genre: string[];
-  bpm: string;
+  producers: string[];
+  writers: string[];
+  genres: string[];
+  bpm: number;
+  key: string;
+  mood: string[];
   description: string;
-  trivia: string;
-  sales: string;
-  awards?: string[];
-  chartPositions?: string[];
+  album: {
+    title: string;
+    releaseDate: string;
+    trackNumber: number;
+  };
+  single: {
+    releaseDate: string;
+    catalogNumber: string;
+    format: string;
+  };
+  charts: {
+    oricon: {
+      peak: number;
+      weeksOnChart: number;
+    };
+  };
+  sales: {
+    copiesSold: number;
+    certification: string;
+  };
+  credits: {
+    lyrics: string;
+    composition: string;
+    arrangement: string[];
+    producer: string[];
+  };
 }
 
-const songInfo: SongInfo = {
-  title: 'Robinson',
-  japaneseTitle: 'ロビンソン',
-  artist: 'Spitz',
-  album: 'Hachimitsu (Honey)',
-  year: '1995',
-  released: 'April 5, 1995',
-  track: '11th Single',
-  duration: '4:29',
-  label: 'Polydor Records',
-  writers: 'Masamune Kusano',
-  producers: 'Spitz',
-  recorded: '1995',
-  genre: ['Soft rock', 'Pop rock', 'Alternative rock'],
-  bpm: '120',
-  description: '"Robinson" (ロビンソン) is a song by the Japanese rock band Spitz, released on April 5, 1995 as their 11th single. It later appeared on their sixth studio album, Hachimitsu (Honey). The song became the band\'s commercial breakthrough and remains their signature work over 30 years later.',
-  trivia: 'One of the song\'s most famous pieces of trivia is that the title has almost nothing to do with the lyrics. According to songwriter Masamune Kusano, "Robinson" was originally just a working title inspired by seeing a Robinson Department Store while traveling in Thailand. The temporary title simply stuck and became the final title, even though the word "Robinson" never appears in the lyrics.',
-  sales: 'Over 1.6 million copies sold',
-  awards: [
-    'Best-selling single of Spitz\'s career',
-    'Widely regarded as one of the defining Japanese rock songs of the 1990s',
-    'Helped establish Spitz as one of Japan\'s most successful rock bands',
-  ],
-  chartPositions: [
-    'Oricon Weekly Singles Chart - Peak Position #2',
-    'Oricon Year-end Chart (1995) - #18',
-    'Oricon All-time Singles Chart - #89',
-  ],
+// Use the data directly
+const songData: SongMetadata = metadataData as SongMetadata;
+
+// Format duration from seconds to mm:ss
+const formatDuration = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+// Format number with commas
+const formatNumber = (num: number) => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
 // Custom scrollbar styles
@@ -164,17 +172,17 @@ const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose }) => {
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close button - floating */}
+              {/* X Close button - floating top right with higher z-index */}
               <motion.button
                 onClick={onClose}
-                className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-accent/20 transition-colors text-secondary/60 hover:text-secondary"
+                className="absolute top-3 right-3 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-accent/30 hover:border-accent/30 transition-all duration-200 text-white/60 hover:text-white"
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </motion.button>
 
               {/* Scrollable content with custom scrollbar */}
@@ -192,10 +200,10 @@ const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose }) => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 }}
                     >
-                      <span className="bg-accent/10 px-3 py-1 rounded-full">Single • 1995</span>
+                      <span className="bg-accent/10 px-3 py-1 rounded-full">Single • {songData.year}</span>
                     </motion.div>
                     
-                    {/* Title with Japanese */}
+                    {/* Title */}
                     <div className="flex flex-col gap-1">
                       <motion.h1 
                         className="text-4xl md:text-5xl font-bold tracking-tight"
@@ -204,17 +212,8 @@ const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose }) => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.2 }}
                       >
-                        <span className="text-gradient-red">ROBINSON</span>
+                        <span className="text-gradient-red">{songData.title}</span>
                       </motion.h1>
-                      <motion.div 
-                        className="text-secondary/40 text-sm font-light tracking-wide"
-                        style={{ fontFamily: "'Mochiy Pop P One', sans-serif" }}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.25 }}
-                      >
-                        {songInfo.japaneseTitle}
-                      </motion.div>
                     </div>
                     
                     {/* Artist */}
@@ -225,9 +224,9 @@ const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose }) => {
                       transition={{ delay: 0.3 }}
                     >
                       <span className="text-secondary/60 text-sm font-light">by</span>
-                      <span className="text-secondary text-sm font-medium tracking-wide">{songInfo.artist}</span>
+                      <span className="text-secondary text-sm font-medium tracking-wide">{songData.artist}</span>
                       <span className="w-1 h-1 rounded-full bg-secondary/20" />
-                      <span className="text-secondary/40 text-xs tracking-widest font-light">JPN</span>
+                      <span className="text-secondary/40 text-xs tracking-widest font-light">{songData.artistCountry}</span>
                     </motion.div>
                   </div>
                 </div>
@@ -246,7 +245,7 @@ const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose }) => {
                       About
                     </h2>
                     <p className="text-secondary/70 text-sm leading-relaxed font-light">
-                      {songInfo.description}
+                      {songData.description}
                     </p>
                   </motion.div>
 
@@ -264,21 +263,21 @@ const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose }) => {
                     <div className="flex flex-col md:flex-row gap-4">
                       <div className="flex-1">
                         <div className="text-2xl font-bold text-accent" style={{ fontFamily: "'Bungee', cursive" }}>
-                          1.6M+
+                          {songData.sales.certification}
                         </div>
-                        <div className="text-secondary/40 text-[10px] tracking-[0.1em] font-light uppercase">Copies Sold</div>
+                        <div className="text-secondary/40 text-[10px] tracking-[0.1em] font-light uppercase">Certification</div>
                       </div>
                       <div className="flex-1">
                         <div className="text-2xl font-bold text-primary/80" style={{ fontFamily: "'Bungee', cursive" }}>
-                          #2
+                          #{songData.charts.oricon.peak}
                         </div>
                         <div className="text-secondary/40 text-[10px] tracking-[0.1em] font-light uppercase">Oricon Chart Peak</div>
                       </div>
                       <div className="flex-1">
                         <div className="text-2xl font-bold text-primary/80" style={{ fontFamily: "'Bungee', cursive" }}>
-                          1995
+                          {songData.charts.oricon.weeksOnChart}
                         </div>
-                        <div className="text-secondary/40 text-[10px] tracking-[0.1em] font-light uppercase">Defining Song of the 90s</div>
+                        <div className="text-secondary/40 text-[10px] tracking-[0.1em] font-light uppercase">Weeks on Chart</div>
                       </div>
                     </div>
                   </motion.div>
@@ -291,14 +290,14 @@ const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose }) => {
                     transition={{ delay: 0.6 }}
                   >
                     {[
-                      { icon: Music, label: 'Genre', value: songInfo.genre.join(' • ') },
-                      { icon: Calendar, label: 'Released', value: songInfo.released },
-                      { icon: Disc, label: 'Album', value: songInfo.album },
-                      { icon: Clock, label: 'Length', value: songInfo.duration },
-                      { icon: User, label: 'Lyrics & Music', value: songInfo.writers },
-                      { icon: Mic, label: 'Producer(s)', value: songInfo.producers },
-                      { icon: Tag, label: 'Label', value: songInfo.label },
-                      { icon: Award, label: 'Certification', value: 'Million (1.6M+)' },
+                      { icon: Music, label: 'Genre', value: songData.genres.join(' • ') },
+                      { icon: Calendar, label: 'Released', value: songData.single.releaseDate },
+                      { icon: Disc, label: 'Album', value: songData.album.title },
+                      { icon: Clock, label: 'Length', value: formatDuration(songData.duration) },
+                      { icon: User, label: 'Writers', value: songData.writers.join(', ') },
+                      { icon: Mic, label: 'Producer(s)', value: songData.producers.join(', ') },
+                      { icon: Tag, label: 'Label', value: songData.label },
+                      { icon: Award, label: 'Certification', value: songData.sales.certification },
                     ].map((item, index) => (
                       <motion.div
                         key={item.label}
@@ -320,79 +319,100 @@ const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose }) => {
                     ))}
                   </motion.div>
 
-                  {/* Trivia Section - Why is it called Robinson? */}
+                  {/* Credits Section */}
                   <motion.div
-                    className="mb-8 p-4 bg-amber-500/5 rounded-xl border border-amber-500/10"
+                    className="mb-8"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}
                   >
-                    <h2 className="text-[10px] text-amber-400/60 tracking-[0.2em] font-light uppercase mb-3 flex items-center gap-2">
-                      <Heart className="w-3.5 h-3.5 text-amber-400/60" />
-                      Why is it called "Robinson"?
+                    <h2 className="text-[10px] text-secondary/40 tracking-[0.2em] font-light uppercase mb-3 flex items-center gap-2">
+                      <Mic className="w-3.5 h-3.5" />
+                      Credits
                     </h2>
-                    <p className="text-secondary/60 text-sm leading-relaxed font-light">
-                      {songInfo.trivia}
-                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-[8px] text-secondary/40 tracking-[0.1em] font-light uppercase">Lyrics</div>
+                        <div className="text-[12px] text-primary/70 font-light mt-0.5">{songData.credits.lyrics}</div>
+                      </div>
+                      <div>
+                        <div className="text-[8px] text-secondary/40 tracking-[0.1em] font-light uppercase">Composition</div>
+                        <div className="text-[12px] text-primary/70 font-light mt-0.5">{songData.credits.composition}</div>
+                      </div>
+                      <div>
+                        <div className="text-[8px] text-secondary/40 tracking-[0.1em] font-light uppercase">Arrangement</div>
+                        <div className="text-[12px] text-primary/70 font-light mt-0.5">{songData.credits.arrangement.join(', ')}</div>
+                      </div>
+                      <div>
+                        <div className="text-[8px] text-secondary/40 tracking-[0.1em] font-light uppercase">Producers</div>
+                        <div className="text-[12px] text-primary/70 font-light mt-0.5">{songData.credits.producer.join(', ')}</div>
+                      </div>
+                    </div>
                   </motion.div>
 
-                  {/* Awards Section */}
-                  {songInfo.awards && (
-                    <motion.div
-                      className="mb-6"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.9 }}
-                    >
-                      <h2 className="text-[10px] text-secondary/40 tracking-[0.2em] font-light uppercase mb-3 flex items-center gap-2">
-                        <Award className="w-3.5 h-3.5" />
-                        Legacy & Recognition
-                      </h2>
-                      <div className="space-y-2">
-                        {songInfo.awards.map((award, index) => (
-                          <motion.div
-                            key={index}
-                            className="flex items-center gap-3 text-secondary/60 text-sm font-light pl-4 border-l-2 border-accent/30"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.9 + index * 0.1 }}
-                          >
-                            <span className="text-accent/40">▸</span>
-                            {award}
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
+                  {/* Mood */}
+                  <motion.div
+                    className="mb-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.9 }}
+                  >
+                    <h2 className="text-[10px] text-secondary/40 tracking-[0.2em] font-light uppercase mb-2 flex items-center gap-2">
+                      <Heart className="w-3.5 h-3.5" />
+                      Mood
+                    </h2>
+                    <p className="text-secondary/60 text-sm font-light">{songData.mood.join(' • ')}</p>
+                  </motion.div>
 
-                  {/* Chart Positions */}
-                  {songInfo.chartPositions && (
-                    <motion.div
-                      className="mb-6"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 1.1 }}
-                    >
-                      <h2 className="text-[10px] text-secondary/40 tracking-[0.2em] font-light uppercase mb-3 flex items-center gap-2">
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Chart Performance
-                      </h2>
-                      <div className="space-y-2">
-                        {songInfo.chartPositions.map((position, index) => (
-                          <motion.div
-                            key={index}
-                            className="flex items-center gap-3 text-secondary/60 text-sm font-light pl-4"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 1.1 + index * 0.1 }}
-                          >
-                            <span className="text-accent/30 text-xs">#{index + 1}</span>
-                            {position}
-                          </motion.div>
-                        ))}
+                  {/* Technical Info */}
+                  <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div>
+                      <div className="text-[8px] text-secondary/40 tracking-[0.1em] font-light uppercase">BPM</div>
+                      <div className="text-[12px] text-primary/70 font-light mt-0.5">{songData.bpm}</div>
+                    </div>
+                    <div>
+                      <div className="text-[8px] text-secondary/40 tracking-[0.1em] font-light uppercase">Key</div>
+                      <div className="text-[12px] text-primary/70 font-light mt-0.5">{songData.key}</div>
+                    </div>
+                  </div>
+
+                  {/* Sales */}
+                  <motion.div
+                    className="mb-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.0 }}
+                  >
+                    <h2 className="text-[10px] text-secondary/40 tracking-[0.2em] font-light uppercase mb-3 flex items-center gap-2">
+                      <Award className="w-3.5 h-3.5" />
+                      Sales
+                    </h2>
+                    <div className="flex items-center gap-3 text-secondary/60 text-sm font-light pl-4 border-l-2 border-accent/30">
+                      <span className="text-accent/40">▸</span>
+                      {formatNumber(songData.sales.copiesSold)} copies sold
+                    </div>
+                  </motion.div>
+
+                  {/* Single Info */}
+                  <motion.div
+                    className="mb-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.1 }}
+                  >
+                    <h2 className="text-[10px] text-secondary/40 tracking-[0.2em] font-light uppercase mb-3 flex items-center gap-2">
+                      <Disc className="w-3.5 h-3.5" />
+                      Single Details
+                    </h2>
+                    <div className="space-y-1 text-secondary/60 text-sm font-light pl-4 border-l-2 border-accent/30">
+                      <div>
+                        <span className="text-accent/40">▸</span> Catalog: {songData.single.catalogNumber}
                       </div>
-                    </motion.div>
-                  )}
+                      <div>
+                        <span className="text-accent/40">▸</span> Format: {songData.single.format}
+                      </div>
+                    </div>
+                  </motion.div>
 
                   {/* Footer */}
                   <motion.div
@@ -401,7 +421,7 @@ const SongInfoModal: React.FC<SongInfoModalProps> = ({ isOpen, onClose }) => {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1.3 }}
                   >
-                    <span>© 1995 Polydor Records</span>
+                    <span>© {songData.year} {songData.label}</span>
                     <div className="flex items-center gap-3">
                       <span className="w-1 h-1 rounded-full bg-accent/30" />
                       <span>All Rights Reserved</span>

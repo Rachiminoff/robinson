@@ -1,0 +1,63 @@
+{
+  "artist": "SPITZ",
+  "artistCountry": "Japan",
+  "title": "Robinson",
+  "year": 1995,
+  "trackNumber": "03",
+  "duration": 201,
+  "label": "Polydor Records",
+  "producers": [
+    "SPITZ",
+    "Masanori Sasaji"
+  ],
+  "writers": [
+    "Masamune Kusano"
+  ],
+  "genres": [
+    "J-Rock",
+    "J-Pop",
+    "Alternative Rock",
+    "Power Pop"
+  ],
+  "bpm": 97,
+  "key": "G Major",
+  "mood": [
+    "Nostalgic",
+    "Dreamlike",
+    "Bittersweet",
+    "Hopeful"
+  ],
+  "description": "Released as SPITZ's 11th single in 1995, 'Robinson' became the band's breakthrough hit and one of the defining songs of 1990s Japanese rock. Despite peaking at No. 4 on the Oricon Singles Chart, its remarkable longevity and word-of-mouth popularity helped it become a million-selling classic. The song is celebrated for its shimmering guitar melodies, poetic lyrics, and timeless, dreamlike atmosphere.",
+  "album": {
+    "title": "Hachimitsu",
+    "releaseDate": "1995-04-05",
+    "trackNumber": 3
+  },
+  "single": {
+    "releaseDate": "1995-04-05",
+    "catalogNumber": "PODH-1243",
+    "format": "8 cm CD Single"
+  },
+  "charts": {
+    "oricon": {
+      "peak": 4,
+      "weeksOnChart": 36
+    }
+  },
+  "sales": {
+    "copiesSold": 1594310,
+    "certification": "Million (Japan)"
+  },
+  "credits": {
+    "lyrics": "Masamune Kusano",
+    "composition": "Masamune Kusano",
+    "arrangement": [
+      "SPITZ",
+      "Masanori Sasaji"
+    ],
+    "producer": [
+      "SPITZ",
+      "Masanori Sasaji"
+    ]
+  }
+}

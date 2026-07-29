@@ -1,857 +1,875 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { motion, useSpring, useTransform } from 'framer-motion';
+// src/components/InteractiveBackground.tsx
+
+import React, { useRef, useEffect, useMemo } from 'react';
+import { motion, useSpring, AnimatePresence } from 'framer-motion';
 import { useMouseTracking } from '../hooks/useMouseTracking';
+import { GeometryConfig } from '../types/composition';
 
 interface InteractiveBackgroundProps {
-  showGrid?: boolean;
+  composition: GeometryConfig;
+  isPlaying: boolean;
+  currentTime: number;
 }
 
-const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ showGrid = false }) => {
+const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ 
+  composition, 
+  isPlaying, 
+  currentTime 
+}) => {
   const mouse = useMouseTracking();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [clickCount, setClickCount] = useState<number>(0);
-  const [isInverted, setIsInverted] = useState<boolean>(false);
-  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [showClickIndicator, setShowClickIndicator] = useState<boolean>(false);
-
-  // Handle triple click
+  const { shapes, colors } = composition;
+  
+  // Spring values for smooth interactions
+  const x = useSpring(0, { damping: 30, stiffness: 120, mass: 0.8 });
+  const y = useSpring(0, { damping: 30, stiffness: 120, mass: 0.8 });
+  const scale = useSpring(1, { damping: 25, stiffness: 100, mass: 0.6 });
+  const rotate = useSpring(0, { damping: 35, stiffness: 80, mass: 0.5 });
+  
+  // Update spring values based on mouse
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('[role="button"]')) {
-        return;
-      }
+    const targetX = (mouse.normalizedX - 0.5) * 60;
+    const targetY = (mouse.normalizedY - 0.5) * 60;
+    x.set(targetX);
+    y.set(targetY);
+  }, [mouse.normalizedX, mouse.normalizedY, x, y]);
+  
+  // Breathing animation
+  useEffect(() => {
+    if (isPlaying) {
+      let frame: number;
+      let startTime = Date.now();
+      
+      const breathe = () => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        const rhythm = 3 + Math.sin(currentTime / 10) * 0.5;
+        const breathValue = Math.sin(elapsed / rhythm) * 0.015;
+        scale.set(1 + breathValue);
+        
+        const rotateValue = Math.sin(elapsed / (rhythm * 1.5)) * 0.3;
+        rotate.set(rotateValue);
+        
+        frame = requestAnimationFrame(breathe);
+      };
+      
+      breathe();
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [isPlaying, currentTime, scale, rotate]);
 
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current);
-      }
-
-      setClickCount(prev => {
-        const newCount = prev + 1;
-        setShowClickIndicator(true);
-
-        if (newCount >= 3) {
-          setIsInverted(prev => !prev);
-          setShowClickIndicator(false);
-          if (navigator.vibrate) {
-            navigator.vibrate(20);
-          }
-          return 0;
-        }
-
-        clickTimerRef.current = setTimeout(() => {
-          setClickCount(0);
-          setShowClickIndicator(false);
-        }, 600);
-
-        return newCount;
-      });
+  // Enhanced shape rendering with cinematic animations
+  const renderShape = (shape: any, index: number) => {
+    const mood = (composition as any).mood || 'balanced';
+    const moodOpacity = mood === 'dramatic' ? 1.4 : 
+                        mood === 'minimal' ? 0.5 : 1;
+    
+    const baseDelay = index * 0.05;
+    const speedMultiplier = mood === 'dramatic' ? 0.5 :
+                           mood === 'elegant' ? 1.6 : 1;
+    
+    const baseStyle: React.CSSProperties = {
+      position: 'absolute',
+      left: `${shape.x}%`,
+      top: `${shape.y}%`,
+      transform: `translate(-50%, -50%) rotate(${shape.rotation}deg)`,
+      willChange: 'transform, opacity',
+      backfaceVisibility: 'hidden',
     };
 
-    document.addEventListener('click', handleClick);
-    return () => {
-      document.removeEventListener('click', handleClick);
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current);
+    const color = shape.color;
+    const opacity = Math.min(shape.opacity * 2 * moodOpacity, 0.35);
+
+    // Unique motion offsets for each shape
+    const getMotionOffset = () => {
+      const offsets = [
+        { x: 15, y: -20 },
+        { x: 20, y: 10 },
+        { x: -10, y: 15 },
+        { x: 25, y: -15 },
+      ];
+      return offsets[index % offsets.length];
+    };
+
+    const offset = getMotionOffset();
+
+    // Calculate animated values
+    const animX = x.get() * (0.3 + index * 0.02);
+    const animY = y.get() * (0.3 + index * 0.02) + Math.sin(currentTime / (4 * speedMultiplier) + index * 1.5) * offset.y * 0.5;
+    const animScale = scale.get() * (1 + Math.sin(currentTime / (4 * speedMultiplier) + index * 1.5) * 0.025);
+
+    switch (shape.type) {
+      case 'circle':
+        return (
+          <motion.div
+            key={`circle-${index}`}
+            className="rounded-full"
+            initial={{ 
+              opacity: 0, 
+              scale: 0.8,
+              y: 20,
+            }}
+            animate={{ 
+              opacity: opacity,
+              scale: animScale,
+              y: 0,
+              x: animX,
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.6,
+              y: -20,
+            }}
+            transition={{ 
+              duration: 0.8,
+              delay: baseDelay,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            style={{
+              ...baseStyle,
+              width: shape.width,
+              height: shape.height,
+              background: color,
+              border: `2px solid ${color}66`,
+              boxShadow: `0 0 40px ${color}22`,
+            }}
+          />
+        );
+        
+      case 'rectangle':
+        const rectAnimX = x.get() * (0.4 + index * 0.015);
+        const rectAnimY = y.get() * (0.4 + index * 0.015) + Math.sin(currentTime / (6 * speedMultiplier) + index * 0.8) * offset.y * 0.3;
+        const rectAnimRotate = shape.rotation + Math.sin(currentTime / (6 * speedMultiplier) + index * 0.8) * 3 + rotate.get();
+        const rectAnimScale = scale.get() * (1 + Math.sin(currentTime / (5 * speedMultiplier) + index * 0.7) * 0.02);
+        
+        return (
+          <motion.div
+            key={`rect-${index}`}
+            initial={{ 
+              opacity: 0, 
+              scale: 0.7,
+              rotate: -10,
+            }}
+            animate={{ 
+              opacity: opacity,
+              scale: rectAnimScale,
+              rotate: rectAnimRotate,
+              x: rectAnimX,
+              y: rectAnimY,
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.5,
+              rotate: 10,
+            }}
+            transition={{ 
+              duration: 0.9,
+              delay: baseDelay + 0.1,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            style={{
+              ...baseStyle,
+              width: shape.width,
+              height: shape.height,
+              background: color,
+              border: `2px solid ${color}66`,
+              boxShadow: `0 0 30px ${color}11`,
+            }}
+          />
+        );
+        
+      case 'triangle':
+        const triAnimX = x.get() * (0.2 + index * 0.03);
+        const triAnimY = y.get() * (0.2 + index * 0.03) + Math.sin(currentTime / (5 * speedMultiplier) + index * 1.2) * offset.y * 0.4;
+        const triAnimRotate = shape.rotation + Math.sin(currentTime / (5 * speedMultiplier) + index * 1.2) * 4 + rotate.get() * 0.5;
+        const triAnimScale = scale.get() * (1 + Math.sin(currentTime / (3.5 * speedMultiplier) + index * 0.9) * 0.025);
+        
+        return (
+          <motion.div
+            key={`tri-${index}`}
+            initial={{ 
+              opacity: 0, 
+              scale: 0.6,
+              y: 30,
+            }}
+            animate={{ 
+              opacity: opacity,
+              scale: triAnimScale,
+              y: 0,
+              x: triAnimX,
+              rotate: triAnimRotate,
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.4,
+              y: -30,
+            }}
+            transition={{ 
+              duration: 0.7,
+              delay: baseDelay + 0.05,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            style={{
+              ...baseStyle,
+              width: 0,
+              height: 0,
+              borderLeft: `${shape.width / 2}px solid transparent`,
+              borderRight: `${shape.width / 2}px solid transparent`,
+              borderBottom: `${shape.height}px solid ${color}`,
+              filter: `drop-shadow(0 0 20px ${color}22)`,
+            }}
+          />
+        );
+        
+      case 'line':
+        const lineAnimX = x.get() * (0.2 + index * 0.04);
+        const lineAnimY = y.get() * (0.2 + index * 0.04) + Math.sin(currentTime / (8 * speedMultiplier) + index * 0.5) * offset.y * 0.2;
+        const lineAnimRotate = shape.rotation + Math.sin(currentTime / (8 * speedMultiplier) + index * 0.5) * 1.5 + rotate.get() * 0.3;
+        const lineAnimScaleX = scale.get() * (1 + Math.sin(currentTime / (6 * speedMultiplier) + index * 0.6) * 0.04);
+        
+        return (
+          <motion.div
+            key={`line-${index}`}
+            initial={{ 
+              opacity: 0, 
+              scaleX: 0,
+              x: -20,
+            }}
+            animate={{ 
+              opacity: opacity * 1.2,
+              scaleX: lineAnimScaleX,
+              x: lineAnimX,
+              y: lineAnimY,
+              rotate: lineAnimRotate,
+            }}
+            exit={{
+              opacity: 0,
+              scaleX: 0,
+              x: 20,
+            }}
+            transition={{ 
+              duration: 0.6,
+              delay: baseDelay + 0.15,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            style={{
+              ...baseStyle,
+              width: shape.width,
+              height: Math.max(shape.height, 2),
+              background: color,
+              boxShadow: `0 0 20px ${color}11`,
+            }}
+          />
+        );
+        
+      default:
+        return null;
+    }
+  };
+
+  // Render Swiss design elements with elegant transitions
+  const renderSwissElements = () => {
+    const elements = [];
+    const primary = colors.primary;
+    const secondary = colors.secondary;
+    const accent = colors.accent;
+    const mood = (composition as any).mood || 'balanced';
+    
+    const getMoodScale = () => {
+      switch(mood) {
+        case 'dramatic': return 1.4;
+        case 'minimal': return 0.6;
+        case 'elegant': return 0.9;
+        default: return 1;
       }
     };
-  }, []);
+    
+    const moodScale = getMoodScale();
+    const baseOpacity = mood === 'minimal' ? 0.03 : 0.07;
+    const baseDelay = 0.2;
 
-  // Calculate interactive offsets
-  const offsetX = (mouse.normalizedX - 0.5) * 40;
-  const offsetY = (mouse.normalizedY - 0.5) * 40;
-  const rotateX = (mouse.normalizedY - 0.5) * 3;
-  const rotateY = (mouse.normalizedX - 0.5) * -3;
-  const velocity = mouse.velocity;
+    // Large circle with smooth entrance
+    elements.push(
+      <motion.div
+        key="swiss-circle-1"
+        className="absolute rounded-full"
+        initial={{ 
+          opacity: 0, 
+          scale: 0.8,
+          y: 50,
+        }}
+        animate={{ 
+          opacity: baseOpacity,
+          scale: 1 + Math.sin(currentTime / 20) * 0.03,
+          y: 0,
+          x: x.get() * 0.12,
+        }}
+        transition={{ 
+          type: "spring", 
+          damping: 30, 
+          stiffness: 60, 
+          mass: 0.8,
+          delay: baseDelay,
+        }}
+        style={{
+          width: 400 * moodScale,
+          height: 400 * moodScale,
+          background: primary,
+          top: '10%',
+          right: '-5%',
+          border: `2px solid ${primary}`,
+          willChange: 'transform, opacity',
+        }}
+      />
+    );
+    
+    // Secondary circle with staggered entrance
+    elements.push(
+      <motion.div
+        key="swiss-circle-2"
+        className="absolute rounded-full"
+        initial={{ 
+          opacity: 0, 
+          scale: 0.6,
+          x: -50,
+        }}
+        animate={{ 
+          opacity: baseOpacity * 0.7,
+          scale: 1 + Math.sin(currentTime / 25 + 1) * 0.025,
+          x: 0,
+          y: y.get() * -0.1,
+        }}
+        transition={{
+          type: "spring",
+          damping: 30,
+          stiffness: 60,
+          mass: 0.8,
+          delay: baseDelay + 0.3,
+        }}
+        style={{
+          width: 250 * moodScale,
+          height: 250 * moodScale,
+          background: secondary,
+          bottom: '15%',
+          left: '-5%',
+          border: `1.5px solid ${secondary}`,
+          willChange: 'transform, opacity',
+        }}
+      />
+    );
+    
+    // Large square with dramatic entrance
+    elements.push(
+      <motion.div
+        key="swiss-square"
+        className="absolute"
+        initial={{ 
+          opacity: 0, 
+          rotate: -20,
+          scale: 0.7,
+        }}
+        animate={{ 
+          opacity: baseOpacity * 0.8,
+          rotate: 15 + Math.sin(currentTime / 25) * 3 + rotate.get() * 0.2,
+          scale: 1,
+          x: x.get() * 0.1,
+          y: y.get() * 0.1,
+        }}
+        transition={{
+          type: "spring",
+          damping: 30,
+          stiffness: 60,
+          mass: 0.8,
+          delay: baseDelay + 0.5,
+        }}
+        style={{
+          width: 200 * moodScale,
+          height: 200 * moodScale,
+          background: secondary,
+          bottom: '10%',
+          left: '-3%',
+          border: `2px solid ${secondary}`,
+          willChange: 'transform, opacity',
+        }}
+      />
+    );
+    
+    // Grid squares with staggered entrance
+    const gridSize = mood === 'minimal' ? 4 : mood === 'dramatic' ? 8 : 6;
+    for (let i = 0; i < gridSize; i++) {
+      const size = 16 + i * 10;
+      const colors_ = [primary, secondary, accent];
+      const color = colors_[i % 3];
+      const opacity = (baseOpacity * 0.8) + i * 0.015;
+      
+      elements.push(
+        <motion.div
+          key={`square-${i}`}
+          className="absolute"
+          initial={{ 
+            opacity: 0, 
+            scale: 0.5,
+            rotate: -30,
+          }}
+          animate={{ 
+            opacity: opacity * (0.8 + Math.sin(currentTime / 8 + i * 0.5) * 0.1),
+            scale: 1 + Math.sin(currentTime / 6 + i * 0.7) * 0.06,
+            rotate: 45 + Math.sin(currentTime / 10 + i) * 6 + rotate.get() * 0.1,
+            x: x.get() * 0.05 * i,
+            y: y.get() * 0.05 * i,
+          }}
+          transition={{
+            type: "spring",
+            damping: 30,
+            stiffness: 60,
+            mass: 0.6,
+            delay: baseDelay + 0.2 + i * 0.06,
+          }}
+          style={{
+            width: size * (mood === 'dramatic' ? 1.2 : 1),
+            height: size * (mood === 'dramatic' ? 1.2 : 1),
+            background: color,
+            top: `${10 + i * 13}%`,
+            left: `${5 + i * 10}%`,
+            border: `1px solid ${color}66`,
+            willChange: 'transform, opacity',
+          }}
+        />
+      );
+    }
+    
+    // Diagonal stripes with elegant reveal
+    const stripeThickness = mood === 'dramatic' ? 6 : mood === 'minimal' ? 2 : 4;
+    elements.push(
+      <motion.div
+        key="stripe-1"
+        className="absolute"
+        initial={{ 
+          opacity: 0, 
+          x: -100,
+        }}
+        animate={{ 
+          opacity: baseOpacity * (0.8 + Math.sin(currentTime / 15) * 0.15),
+          x: x.get() * 0.06,
+          y: y.get() * 0.06,
+        }}
+        transition={{
+          type: "spring",
+          damping: 30,
+          stiffness: 60,
+          mass: 0.6,
+          delay: baseDelay + 0.8,
+        }}
+        style={{
+          width: '100%',
+          height: `${stripeThickness}px`,
+          background: accent,
+          top: '25%',
+          transform: 'rotate(-15deg)',
+          transformOrigin: 'center',
+          willChange: 'transform, opacity',
+        }}
+      />
+    );
+    
+    // Second stripe with different entrance
+    elements.push(
+      <motion.div
+        key="stripe-2"
+        className="absolute"
+        initial={{ 
+          opacity: 0, 
+          x: 100,
+        }}
+        animate={{ 
+          opacity: baseOpacity * 0.8 * (0.8 + Math.sin(currentTime / 18 + 1) * 0.15),
+          x: x.get() * -0.04,
+          y: y.get() * -0.04,
+        }}
+        transition={{
+          type: "spring",
+          damping: 30,
+          stiffness: 60,
+          mass: 0.6,
+          delay: baseDelay + 1.0,
+        }}
+        style={{
+          width: '100%',
+          height: `${stripeThickness * 0.75}px`,
+          background: secondary,
+          bottom: '30%',
+          transform: 'rotate(8deg)',
+          transformOrigin: 'center',
+          willChange: 'transform, opacity',
+        }}
+      />
+    );
+    
+    // Frames with elegant reveal
+    const frameOpacity = mood === 'minimal' ? 0.02 : 0.045;
+    elements.push(
+      <motion.div
+        key="frame"
+        className="absolute"
+        initial={{ 
+          opacity: 0, 
+          scale: 0.9,
+        }}
+        animate={{ 
+          opacity: frameOpacity * (0.8 + Math.sin(currentTime / 22) * 0.1),
+          scale: 1 + Math.sin(currentTime / 20) * 0.008,
+          rotate: 0.5 + Math.sin(currentTime / 25) * 0.3 + rotate.get() * 0.05,
+        }}
+        transition={{
+          type: "spring",
+          damping: 30,
+          stiffness: 60,
+          mass: 0.8,
+          delay: baseDelay + 0.4,
+        }}
+        style={{
+          width: '60%',
+          height: '60%',
+          border: `${mood === 'dramatic' ? '4px' : '2px'} solid ${primary}`,
+          top: '20%',
+          left: '20%',
+          pointerEvents: 'none',
+          willChange: 'transform, opacity',
+        }}
+      />
+    );
+    
+    // Second frame with staggered entrance
+    elements.push(
+      <motion.div
+        key="frame-2"
+        className="absolute"
+        initial={{ 
+          opacity: 0, 
+          scale: 0.8,
+        }}
+        animate={{ 
+          opacity: frameOpacity * 0.6 * (0.8 + Math.sin(currentTime / 25 + 0.5) * 0.1),
+          scale: 1 + Math.sin(currentTime / 22 + 1) * 0.008,
+          rotate: -0.3 + Math.sin(currentTime / 30 + 1) * 0.2 + rotate.get() * 0.03,
+        }}
+        transition={{
+          type: "spring",
+          damping: 30,
+          stiffness: 60,
+          mass: 0.8,
+          delay: baseDelay + 0.6,
+        }}
+        style={{
+          width: '45%',
+          height: '45%',
+          border: `1px solid ${secondary}`,
+          top: '27.5%',
+          left: '27.5%',
+          pointerEvents: 'none',
+          willChange: 'transform, opacity',
+        }}
+      />
+    );
+    
+    // Dots with staggered wave entrance
+    const dotDensity = mood === 'minimal' ? 5 : mood === 'dramatic' ? 10 : 8;
+    const dotRows = mood === 'minimal' ? 3 : mood === 'dramatic' ? 7 : 6;
+    for (let i = 0; i < dotRows; i++) {
+      for (let j = 0; j < dotDensity; j++) {
+        if ((i + j) % 2 === 0) continue;
+        const dotSize = 2 + (i % 3);
+        const color = [primary, secondary, accent][(i + j) % 3];
+        const spacing = 100 / (dotDensity + 1);
+        const delay = baseDelay + (i * 0.08) + (j * 0.04);
+        
+        elements.push(
+          <motion.div
+            key={`dot-${i}-${j}`}
+            className="absolute rounded-full"
+            initial={{ 
+              opacity: 0, 
+              scale: 0,
+            }}
+            animate={{ 
+              opacity: ((baseOpacity * 0.7) + (i + j) * 0.005) * (0.8 + Math.sin(currentTime / 5 + i + j) * 0.15),
+              scale: 1 + Math.sin(currentTime / 8 + i + j) * 0.3,
+            }}
+            transition={{
+              type: "spring",
+              damping: 30,
+              stiffness: 60,
+              mass: 0.4,
+              delay: delay,
+            }}
+            style={{
+              width: dotSize * (mood === 'dramatic' ? 1.5 : 1),
+              height: dotSize * (mood === 'dramatic' ? 1.5 : 1),
+              background: color,
+              top: `${15 + i * 12}%`,
+              left: `${5 + j * spacing}%`,
+              willChange: 'transform, opacity',
+            }}
+          />
+        );
+      }
+    }
+    
+    return elements;
+  };
 
-  // Background colors
-  const bgColor = isInverted ? '#F5F5F5' : '#111111';
-  const borderColor = isInverted ? 'rgba(17,17,17,0.1)' : 'rgba(245,245,245,0.1)';
-  const borderColorLight = isInverted ? 'rgba(17,17,17,0.05)' : 'rgba(245,245,245,0.05)';
-
-  // Invert key for forcing re-render
-  const invertKey = isInverted ? 'inverted' : 'normal';
+  // Enhanced particles with cinematic motion
+  const renderParticles = () => {
+    if (!isPlaying) return null;
+    
+    const mood = (composition as any).mood || 'balanced';
+    const particleCount = mood === 'dramatic' ? 15 : mood === 'minimal' ? 5 : 10;
+    const particles = [];
+    
+    for (let i = 0; i < particleCount; i++) {
+      const size = 1 + Math.random() * 3;
+      const xPos = 5 + Math.random() * 90;
+      const yPos = 5 + Math.random() * 90;
+      const duration = 20 + Math.random() * 25;
+      const delay = Math.random() * 10;
+      const colors_ = [colors.primary, colors.secondary, colors.accent];
+      const color = colors_[i % 3];
+      
+      particles.push(
+        <motion.div
+          key={`particle-${i}`}
+          className="absolute rounded-full"
+          initial={{ 
+            opacity: 0,
+            scale: 0,
+          }}
+          animate={{
+            opacity: [0, 0.04, 0.01, 0.03, 0],
+            scale: [0, 1, 0.5, 1.2, 0],
+            x: [0, 30, -20, 40, -30, 0],
+            y: [0, -40, 20, -30, 30, 0],
+          }}
+          transition={{
+            duration: duration,
+            delay: delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          style={{
+            width: size,
+            height: size,
+            background: color,
+            left: `${xPos}%`,
+            top: `${yPos}%`,
+            willChange: 'transform, opacity',
+            boxShadow: `0 0 ${size * 4}px ${color}33`,
+          }}
+        />
+      );
+    }
+    
+    return particles;
+  };
 
   return (
-    <div 
-      ref={containerRef} 
-      className="fixed inset-0 z-0 overflow-hidden"
-      style={{ 
-        background: bgColor,
-        transition: 'background 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
-      }}
-    >
-      {/* Triple click indicator */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-        {showClickIndicator && clickCount > 0 && (
-          <motion.div
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-background/80 backdrop-blur-sm rounded-full border border-primary/10 shadow-lg"
-            initial={{ opacity: 0, y: -10, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.9 }}
-          >
-            {[...Array(3)].map((_, i) => (
-              <motion.div
-                key={i}
-                className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${
-                  i < clickCount ? 'bg-accent' : 'bg-primary/20'
-                }`}
-                animate={{
-                  scale: i < clickCount ? [1, 1.3, 1] : 1,
-                }}
-                transition={{
-                  duration: 0.3,
-                  repeat: i < clickCount ? 1 : 0,
-                }}
-              />
-            ))}
-            <span className="text-[8px] text-secondary/40 ml-1 font-light tracking-wider">
-              {3 - clickCount} more {3 - clickCount === 1 ? 'click' : 'clicks'}
-            </span>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Base background gradient */}
+    <AnimatePresence mode="wait">
       <motion.div 
-        className="absolute inset-0 opacity-[0.03]"
-        animate={{
-          background: isInverted ? [
-            'radial-gradient(circle at 20% 50%, rgba(139,47,58,0.05) 0%, transparent 50%)',
-            'radial-gradient(circle at 80% 50%, rgba(52,152,219,0.05) 0%, transparent 50%)',
-            'radial-gradient(circle at 50% 20%, rgba(241,196,15,0.05) 0%, transparent 50%)',
-            'radial-gradient(circle at 20% 50%, rgba(139,47,58,0.05) 0%, transparent 50%)',
-          ] : [
-            'radial-gradient(circle at 20% 50%, rgba(139,47,58,0.1) 0%, transparent 50%)',
-            'radial-gradient(circle at 80% 50%, rgba(52,152,219,0.1) 0%, transparent 50%)',
-            'radial-gradient(circle at 50% 20%, rgba(241,196,15,0.1) 0%, transparent 50%)',
-            'radial-gradient(circle at 20% 50%, rgba(139,47,58,0.1) 0%, transparent 50%)',
-          ]
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-      />
-      
-      {/* Interactive shapes group */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        animate={{
-          x: offsetX * 0.15,
-          y: offsetY * 0.15,
-          rotateX,
-          rotateY,
-        }}
-        transition={{ type: "spring", damping: 30, stiffness: 60 }}
-      >
-        {/* 1. Large diagonal rectangle */}
-        <motion.div
-          key={`rect-${invertKey}`}
-          className="absolute top-[5%] left-[-5%] w-80 h-96 rotate-[35deg]"
-          animate={{
-            x: mouse.normalizedX * 25 - 12.5,
-            y: mouse.normalizedY * 25 - 12.5,
-            rotate: [35, 38, 35],
-            opacity: [0.08, 0.2, 0.08],
-            backgroundColor: isInverted ? '#E94560' : '#8B2F3A',
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 25, 
-            stiffness: 60,
-            rotate: { duration: 8, repeat: Infinity, ease: "easeInOut" },
-            opacity: { duration: 12, repeat: Infinity, ease: "easeInOut" },
-            backgroundColor: { duration: 0.6, ease: "easeInOut" }
-          }}
-        />
-        
-        {/* 2. Large circle */}
-        <motion.div
-          key={`circle-${invertKey}`}
-          className="absolute bottom-[10%] right-[-8%] w-96 h-96 rounded-full"
-          animate={{
-            x: (mouse.normalizedX - 0.5) * -35,
-            y: (mouse.normalizedY - 0.5) * -35,
-            scale: 1 + Math.abs(mouse.normalizedX - 0.5) * 0.05,
-            opacity: [0.06, 0.15, 0.06],
-            backgroundColor: isInverted ? '#6DD5FA' : '#2563EB',
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 20, 
-            stiffness: 50,
-            opacity: { duration: 15, repeat: Infinity, ease: "easeInOut", delay: 1 },
-            backgroundColor: { duration: 0.6, ease: "easeInOut", delay: 0.1 }
-          }}
-        />
-        
-        {/* 3. Triangle */}
-        <motion.div
-          key={`triangle-${invertKey}`}
-          className="absolute top-[15%] right-[10%] w-0 h-0 border-l-[70px] border-l-transparent border-r-[70px] border-r-transparent border-b-[121px]"
-          animate={{
-            x: mouse.normalizedX * 30 - 15,
-            y: mouse.normalizedY * 30 - 15,
-            rotate: mouse.normalizedX * 10,
-            opacity: [0.06, 0.15, 0.06],
-            borderBottomColor: isInverted ? '#FDE68A' : '#F59E0B',
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 20, 
-            stiffness: 40,
-            opacity: { duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 },
-            borderBottomColor: { duration: 0.6, ease: "easeInOut", delay: 0.2 }
-          }}
-        />
-        
-        {/* 4. Square */}
-        <motion.div
-          key={`square-${invertKey}`}
-          className="absolute top-[45%] left-[5%] w-24 h-24 rotate-12"
-          animate={{
-            x: (mouse.normalizedX - 0.5) * -45,
-            y: (mouse.normalizedY - 0.5) * -45,
-            rotate: 12 + (mouse.normalizedX - 0.5) * 15,
-            scale: 1 + Math.abs(mouse.normalizedY - 0.5) * 0.08,
-            opacity: [0.08, 0.2, 0.08],
-            backgroundColor: isInverted ? '#FF6B8A' : '#DC2626',
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 30, 
-            stiffness: 70,
-            opacity: { duration: 8, repeat: Infinity, ease: "easeInOut" },
-            backgroundColor: { duration: 0.6, ease: "easeInOut", delay: 0.3 }
-          }}
-        />
-        
-        {/* 5. Diamond */}
-        <motion.div
-          key={`diamond-${invertKey}`}
-          className="absolute bottom-[35%] right-[10%] w-20 h-20 rotate-45"
-          animate={{
-            x: mouse.normalizedX * 40 - 20,
-            y: (mouse.normalizedY - 0.5) * -40,
-            scale: 1 + (mouse.normalizedX - 0.5) * 0.15,
-            rotate: 45 + (mouse.normalizedX - 0.5) * 10,
-            opacity: [0.06, 0.18, 0.06],
-            backgroundColor: isInverted ? '#87CEEB' : '#1E3A8A',
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 25, 
-            stiffness: 55,
-            opacity: { duration: 11, repeat: Infinity, ease: "easeInOut", delay: 1.5 },
-            backgroundColor: { duration: 0.6, ease: "easeInOut", delay: 0.4 }
-          }}
-        />
-        
-        {/* 6. Small Circle */}
-        <motion.div
-          key={`small-circle-${invertKey}`}
-          className="absolute top-[60%] left-[15%] w-16 h-16 rounded-full"
-          animate={{
-            x: (mouse.normalizedX - 0.5) * -30,
-            y: (mouse.normalizedY - 0.5) * -30,
-            scale: 1 + Math.abs(mouse.normalizedX - 0.5) * 0.1,
-            opacity: [0.05, 0.15, 0.05],
-            backgroundColor: isInverted ? '#FCD34D' : '#F59E0B',
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 20, 
-            stiffness: 45,
-            opacity: { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 0.5 },
-            backgroundColor: { duration: 0.6, ease: "easeInOut", delay: 0.5 }
-          }}
-        />
-        
-        {/* 7. Concentric circles */}
-        <motion.div
-          key={`concentric-${invertKey}`}
-          className="absolute top-[40%] right-[3%]"
-          animate={{
-            x: (mouse.normalizedX - 0.5) * -55,
-            y: (mouse.normalizedY - 0.5) * -55,
-            scale: 1 + Math.abs(mouse.normalizedX - 0.5) * 0.05,
-            opacity: [0.03, 0.08, 0.03],
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 20, 
-            stiffness: 45,
-            opacity: { duration: 10, repeat: Infinity, ease: "easeInOut", delay: 0.5 }
-          }}
-        >
-          {[20, 14, 10, 6, 2].map((size, i) => (
-            <motion.div
-              key={`ring-${i}-${invertKey}`}
-              className="rounded-full border"
-              style={{
-                width: size,
-                height: size,
-                marginTop: i > 0 ? -size - 3 : 0,
-                marginLeft: i > 0 ? 3 : 0,
-                borderColor: isInverted ? 
-                  `rgba(245, 158, 11, ${0.2 + i * 0.05})` :
-                  `rgba(245, 158, 11, ${0.15 + i * 0.05})`,
-              }}
-              animate={{
-                scale: [1, 1 + (i + 1) * 0.02, 1],
-                opacity: [0.3, 0.6, 0.3],
-              }}
-              transition={{
-                duration: 4 + i * 0.5,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.3,
-              }}
-            />
-          ))}
-        </motion.div>
-        
-        {/* 8. Hexagon */}
-        <motion.div
-          key={`hexagon-${invertKey}`}
-          className="absolute bottom-[45%] left-[40%] w-24 h-24"
-          style={{
-            clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
-          }}
-          animate={{
-            x: mouse.normalizedX * 35 - 17.5,
-            y: mouse.normalizedY * 35 - 17.5,
-            rotate: mouse.normalizedX * 25,
-            scale: 1 + Math.abs(mouse.normalizedY - 0.5) * 0.08,
-            opacity: [0.04, 0.12, 0.04],
-            backgroundColor: isInverted ? '#C4B5FD' : '#8B5CF6',
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 25, 
-            stiffness: 65,
-            opacity: { duration: 15, repeat: Infinity, ease: "easeInOut", delay: 1.5 },
-            backgroundColor: { duration: 0.6, ease: "easeInOut", delay: 0.6 }
-          }}
-        />
-        
-        {/* 9. Colorful squares grid */}
-        <motion.div
-          key={`grid-${invertKey}`}
-          className="absolute top-[55%] left-[72%] grid grid-cols-3 gap-1.5"
-          animate={{
-            x: (mouse.normalizedX - 0.5) * -45,
-            y: (mouse.normalizedY - 0.5) * -45,
-            opacity: [0.03, 0.08, 0.03],
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 20, 
-            stiffness: 50,
-            opacity: { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 0.7 }
-          }}
-        >
-          {[...Array(9)].map((_, i) => {
-            const colors = isInverted ? 
-              ['#FDA4AF', '#FDE68A', '#6EE7B7', '#93C5FD', '#C4B5FD', '#FDA4AF', '#FDE68A', '#6EE7B7', '#93C5FD'] :
-              ['#F43F5E', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#F43F5E', '#F59E0B', '#10B981', '#3B82F6'];
-            return (
-              <motion.div
-                key={`grid-${i}-${invertKey}`}
-                className="w-4 h-4"
-                style={{ 
-                  background: colors[i],
-                  opacity: isInverted ? 0.4 : 0.25,
-                }}
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: isInverted ? [0.4, 0.6, 0.4] : [0.25, 0.4, 0.25],
-                }}
-                transition={{
-                  duration: 2 + i * 0.2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: i * 0.1,
-                }}
-              />
-            );
-          })}
-        </motion.div>
-        
-        {/* 10. Dot pattern */}
-        <motion.div
-          key={`dots-${invertKey}`}
-          className="absolute bottom-[30%] left-[22%] grid grid-cols-4 gap-2.5"
-          animate={{
-            x: mouse.normalizedX * 25 - 12.5,
-            y: mouse.normalizedY * 25 - 12.5,
-            opacity: [0.03, 0.08, 0.03],
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 30, 
-            stiffness: 80,
-            opacity: { duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 }
-          }}
-        >
-          {[...Array(16)].map((_, i) => {
-            const colors = isInverted ?
-              ['#E94560', '#6DD5FA', '#FDE68A', '#6EE7B7', '#C4B5FD', '#FDA4AF', '#A5B4FC', '#5EEAD4'] :
-              ['#8B2F3A', '#2563EB', '#F59E0B', '#10B981', '#8B5CF6', '#F43F5E', '#6366F1', '#14B8A6'];
-            return (
-              <motion.div
-                key={`dot-${i}-${invertKey}`}
-                className="w-2 h-2 rounded-full"
-                style={{
-                  background: colors[i % 8],
-                  opacity: isInverted ? 0.6 : 0.4,
-                }}
-                animate={{
-                  scale: [1, 1.4, 1],
-                  opacity: isInverted ? [0.6, 0.9, 0.6] : [0.4, 0.7, 0.4],
-                }}
-                transition={{
-                  duration: 1.5 + (i % 3) * 0.3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: i * 0.06,
-                }}
-              />
-            );
-          })}
-        </motion.div>
-        
-        {/* 11. Diagonal lines */}
-        <motion.div
-          key={`diaglines-${invertKey}`}
-          className="absolute top-[18%] right-[25%] flex flex-col gap-4"
-          animate={{
-            x: mouse.normalizedX * 10 - 5,
-            y: mouse.normalizedY * 10 - 5,
-            opacity: [0.04, 0.1, 0.04],
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 25, 
-            stiffness: 50,
-            opacity: { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 2.2 }
-          }}
-        >
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={`diag-${i}-${invertKey}`}
-              className="h-px rotate-45 origin-right"
-              style={{ 
-                backgroundColor: isInverted ? 
-                  `rgba(233, 69, 96, ${0.15 - i * 0.03})` :
-                  `rgba(244, 63, 94, ${0.15 - i * 0.03})`
-              }}
-              animate={{
-                width: ['6rem', `${8 - i * 0.5}rem`, '6rem'],
-              }}
-              transition={{
-                width: { duration: 4 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 },
-              }}
-            />
-          ))}
-        </motion.div>
-        
-        {/* 12. Triangle cluster */}
-        <motion.div
-          key={`triangles-${invertKey}`}
-          className="absolute bottom-[20%] right-[30%] flex gap-2"
-          animate={{
-            x: mouse.normalizedX * 15 - 7.5,
-            y: mouse.normalizedY * 15 - 7.5,
-            opacity: [0.04, 0.1, 0.04],
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 25, 
-            stiffness: 55,
-            opacity: { duration: 11, repeat: Infinity, ease: "easeInOut", delay: 0.8 }
-          }}
-        >
-          {[
-            isInverted ? '#E94560' : '#8B2F3A',
-            isInverted ? '#6DD5FA' : '#2563EB',
-            isInverted ? '#FDE68A' : '#F59E0B'
-          ].map((color, i) => (
-            <motion.div
-              key={`tricluster-${i}-${invertKey}`}
-              className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-b-[20px]"
-              style={{ borderBottomColor: color }}
-              animate={{
-                y: [0, -4 - i * 2, 0],
-                opacity: [0.3, 0.6, 0.3],
-              }}
-              transition={{
-                y: { duration: 3 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 },
-                opacity: { duration: 3 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }
-              }}
-            />
-          ))}
-        </motion.div>
-        
-        {/* 13. Large vertical bar */}
-        <motion.div
-          key={`vbar-${invertKey}`}
-          className="absolute top-[10%] left-[55%] w-2 rounded-full"
-          animate={{
-            x: mouse.normalizedX * 10 - 5,
-            y: mouse.normalizedY * 10 - 5,
-            height: ['12rem', '16rem', '12rem'],
-            opacity: [0.04, 0.12, 0.04],
-            backgroundColor: isInverted ? '#A5B4FC' : '#6366F1',
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 25, 
-            stiffness: 60,
-            height: { duration: 14, repeat: Infinity, ease: "easeInOut", delay: 1.5 },
-            opacity: { duration: 14, repeat: Infinity, ease: "easeInOut", delay: 1.5 },
-            backgroundColor: { duration: 0.6, ease: "easeInOut", delay: 0.7 }
-          }}
-        />
-        
-        {/* 14. Rectangle with border */}
-        <motion.div
-          key={`rectborder-${invertKey}`}
-          className="absolute top-[30%] right-[5%] w-32 h-20 border-2"
-          animate={{
-            x: (mouse.normalizedX - 0.5) * -20,
-            y: (mouse.normalizedY - 0.5) * -20,
-            rotate: mouse.normalizedX * 5,
-            scale: 1 + Math.abs(mouse.normalizedX - 0.5) * 0.05,
-            opacity: [0.04, 0.1, 0.04],
-            borderColor: isInverted ? '#5EEAD4' : '#14B8A6',
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 25, 
-            stiffness: 55,
-            opacity: { duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2.8 },
-            borderColor: { duration: 0.6, ease: "easeInOut", delay: 0.8 }
-          }}
-        />
-        
-        {/* 15. Small triangle */}
-        <motion.div
-          key={`smalltri-${invertKey}`}
-          className="absolute top-[80%] left-[35%] w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px]"
-          animate={{
-            x: mouse.normalizedX * 15 - 7.5,
-            y: mouse.normalizedY * 15 - 7.5,
-            rotate: mouse.normalizedX * 8,
-            opacity: [0.04, 0.1, 0.04],
-            borderBottomColor: isInverted ? '#FDA4AF' : '#F43F5E',
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 20, 
-            stiffness: 45,
-            opacity: { duration: 10, repeat: Infinity, ease: "easeInOut", delay: 3 },
-            borderBottomColor: { duration: 0.6, ease: "easeInOut", delay: 0.9 }
-          }}
-        />
-        
-        {/* 16. Circle with dots */}
-        <motion.div
-          key={`circledots-${invertKey}`}
-          className="absolute top-[5%] left-[40%]"
-          animate={{
-            x: mouse.normalizedX * 20 - 10,
-            y: mouse.normalizedY * 20 - 10,
-            opacity: [0.03, 0.07, 0.03],
-          }}
-          transition={{ 
-            type: "spring", 
-            damping: 25, 
-            stiffness: 50,
-            opacity: { duration: 16, repeat: Infinity, ease: "easeInOut", delay: 0.5 }
-          }}
-        >
-          <motion.div 
-            className="w-48 h-48 rounded-full border"
-            style={{ borderColor: borderColor }}
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-          />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-primary/10" />
-          {[
-            { top: '10%', left: '10%', color: isInverted ? '#FDA4AF' : '#F43F5E' },
-            { bottom: '15%', right: '15%', color: isInverted ? '#6DD5FA' : '#2563EB' },
-            { top: '20%', right: '20%', color: isInverted ? '#FDE68A' : '#F59E0B' },
-            { bottom: '25%', left: '25%', color: isInverted ? '#6EE7B7' : '#10B981' },
-          ].map((dot, i) => (
-            <motion.div
-              key={`dotcircle-${i}-${invertKey}`}
-              className="absolute w-1.5 h-1.5 rounded-full"
-              style={{
-                top: dot.top,
-                left: dot.left,
-                right: dot.right,
-                bottom: dot.bottom,
-                background: dot.color,
-                opacity: isInverted ? 0.3 : 0.15,
-              }}
-              animate={{
-                scale: [1, 1.5, 1],
-                opacity: isInverted ? [0.3, 0.6, 0.3] : [0.15, 0.3, 0.15],
-              }}
-              transition={{
-                duration: 3 + i * 0.5,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.5,
-              }}
-            />
-          ))}
-        </motion.div>
-        
-        {/* 17. Floating particles */}
-        {[...Array(12)].map((_, i) => {
-          const colors = isInverted ?
-            ['#E94560', '#6DD5FA', '#FDE68A', '#6EE7B7', '#C4B5FD', '#FDA4AF', '#A5B4FC', '#5EEAD4'] :
-            ['#E94560', '#3498DB', '#F1C40F', '#2ECC71', '#9B59B6', '#F43F5E', '#6366F1', '#14B8A6'];
-          return (
-            <motion.div
-              key={`particle-${i}-${invertKey}`}
-              className="absolute w-0.5 h-0.5 rounded-full"
-              style={{
-                left: `${10 + (i * 7) % 80}%`,
-                top: `${5 + (i * 11) % 80}%`,
-                background: colors[i % colors.length],
-                opacity: isInverted ? 0.15 : 0.08,
-              }}
-              animate={{
-                x: (mouse.normalizedX - 0.5) * (20 + i * 2),
-                y: (mouse.normalizedY - 0.5) * (20 + i * 2),
-                scale: [1, 1.5 + (i % 3) * 0.5, 1],
-                opacity: isInverted ? [0.15, 0.4, 0.15] : [0.08, 0.25, 0.08],
-              }}
-              transition={{
-                x: { type: "spring", damping: 25, stiffness: 40 + i * 3 },
-                y: { type: "spring", damping: 25, stiffness: 40 + i * 3 },
-                scale: { duration: 3 + i * 0.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 },
-                opacity: { duration: 3 + i * 0.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 },
-              }}
-            />
-          );
-        })}
-        
-        {/* 18. Horizontal rules */}
-        <div className="absolute inset-0">
-          {[25, 50, 75].map((pos, i) => (
-            <motion.div
-              key={`hrule-${i}-${invertKey}`}
-              className="absolute left-0 right-0 border-t"
-              style={{ 
-                top: `${pos}%`, 
-                borderColor: borderColorLight
-              }}
-              animate={{
-                opacity: [0.03, 0.06, 0.03],
-                scaleX: [1, 1.02, 1],
-                x: mouse.normalizedX * 5 - 2.5,
-              }}
-              transition={{
-                opacity: { duration: 10, repeat: Infinity, ease: "easeInOut", delay: i * 2 },
-                scaleX: { duration: 10, repeat: Infinity, ease: "easeInOut", delay: i * 2 },
-                x: { type: "spring", damping: 30, stiffness: 50 },
-              }}
-            />
-          ))}
-        </div>
-        
-        {/* 19. Vertical rules */}
-        <div className="absolute inset-0">
-          {[25, 50, 75].map((pos, i) => (
-            <motion.div
-              key={`vrule-${i}-${invertKey}`}
-              className="absolute top-0 bottom-0 border-l"
-              style={{ 
-                left: `${pos}%`, 
-                borderColor: borderColorLight
-              }}
-              animate={{
-                opacity: [0.02, 0.05, 0.02],
-                scaleY: [1, 1.02, 1],
-                y: mouse.normalizedY * 5 - 2.5,
-              }}
-              transition={{
-                opacity: { duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 + i * 2 },
-                scaleY: { duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 + i * 2 },
-                y: { type: "spring", damping: 30, stiffness: 50 },
-              }}
-            />
-          ))}
-        </div>
-      </motion.div>
-      
-      {/* Grid lines */}
-      {showGrid && (
-        <motion.div 
-          key={`grid-${invertKey}`}
-          className="absolute inset-0 opacity-10 pointer-events-none"
-          animate={{
-            x: offsetX * 0.08,
-            y: offsetY * 0.08,
-            opacity: 0.08 + Math.abs(mouse.normalizedX - 0.5) * 0.04,
-          }}
-          transition={{ type: "spring", damping: 30, stiffness: 80 }}
-        >
-          <div className="grid grid-cols-12 h-full w-full px-6">
-            {[...Array(12)].map((_, i) => (
-              <motion.div 
-                key={`gridcol-${i}-${invertKey}`}
-                className="border-r h-full"
-                style={{ borderColor: borderColor }}
-                animate={{
-                  opacity: [0.5, 1, 0.5],
-                }}
-                transition={{
-                  duration: 3 + i * 0.1,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: i * 0.05,
-                }}
-              />
-            ))}
-          </div>
-          <div className="absolute inset-0 flex flex-col">
-            {[...Array(12)].map((_, i) => (
-              <motion.div 
-                key={`gridrow-${i}-${invertKey}`}
-                className="border-b w-full flex-1"
-                style={{ borderColor: borderColorLight }}
-                animate={{
-                  opacity: [0.3, 0.7, 0.3],
-                }}
-                transition={{
-                  duration: 3 + i * 0.1,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: i * 0.05 + 1.5,
-                }}
-              />
-            ))}
-          </div>
-        </motion.div>
-      )}
-      
-      {/* Mouse follower glow */}
-      <motion.div
-        key={`glow-${invertKey}`}
-        className="absolute pointer-events-none rounded-full"
-        style={{
-          left: mouse.x - 120,
-          top: mouse.y - 120,
-          width: 240,
-          height: 240,
-        }}
-        animate={{
-          background: isInverted ? `
-            radial-gradient(circle, 
-              rgba(139,47,58,${0.02 + velocity * 0.01}) 0%, 
-              rgba(52,152,219,${0.01 + velocity * 0.005}) 30%,
-              transparent 70%
-            )
-          ` : `
-            radial-gradient(circle, 
-              rgba(139,47,58,${0.06 + velocity * 0.02}) 0%, 
-              rgba(52,152,219,${0.03 + velocity * 0.01}) 30%,
-              transparent 70%
-            )
-          `,
-          scale: 1 + velocity * 0.8,
-          opacity: Math.min(0.3 + velocity * 0.05, 0.8),
-        }}
-        transition={{ type: "spring", damping: 30, stiffness: 100 }}
-      />
-      
-      {/* Secondary mouse follower */}
-      <motion.div
-        key={`glow2-${invertKey}`}
-        className="absolute pointer-events-none rounded-full"
-        style={{
-          left: mouse.x - 180,
-          top: mouse.y - 180,
-          width: 360,
-          height: 360,
-        }}
-        animate={{
-          background: isInverted ? `
-            radial-gradient(circle, 
-              rgba(0,0,0,${0.005 + velocity * 0.002}) 0%, 
-              transparent 70%
-            )
-          ` : `
-            radial-gradient(circle, 
-              rgba(255,255,255,${0.01 + velocity * 0.005}) 0%, 
-              transparent 70%
-            )
-          `,
-          scale: 1 + velocity * 0.5,
-          opacity: Math.min(0.1 + velocity * 0.02, 0.3),
-        }}
-        transition={{ type: "spring", damping: 40, stiffness: 60 }}
-      />
-      
-      {/* Mouse velocity indicator */}
-      {velocity > 0.5 && (
-        <motion.div
-          key={`ring-${invertKey}`}
-          className="absolute pointer-events-none border rounded-full"
-          style={{
-            left: mouse.x - 80 - velocity * 20,
-            top: mouse.y - 80 - velocity * 20,
-            width: 160 + velocity * 40,
-            height: 160 + velocity * 40,
-            borderColor: isInverted ? 'rgba(17,17,17,0.1)' : 'rgba(233,69,96,0.1)',
-          }}
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 0.1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.5 }}
-          transition={{ duration: 0.5 }}
-        />
-      )}
-      
-      {/* Dynamic background texture */}
-      <motion.div
-        key={`texture-${invertKey}`}
-        className="absolute inset-0 opacity-[0.02] pointer-events-none"
-        animate={{
-          background: isInverted ? `
-            radial-gradient(
-              ellipse at ${mouse.normalizedX * 100}% ${mouse.normalizedY * 100}%,
-              rgba(17,17,17,0.05) 0%,
-              transparent 50%
-            )
-          ` : `
-            radial-gradient(
-              ellipse at ${mouse.normalizedX * 100}% ${mouse.normalizedY * 100}%,
-              rgba(139,47,58,0.1) 0%,
-              transparent 50%
-            )
-          `,
-        }}
-        transition={{ type: "spring", damping: 30, stiffness: 50 }}
-      />
-
-      {/* Inversion status indicator */}
-      <motion.div
-        className="fixed bottom-4 left-4 z-50 pointer-events-none"
+        ref={containerRef} 
+        className="fixed inset-0 z-0 overflow-hidden"
         initial={{ opacity: 0 }}
-        animate={{ opacity: isInverted ? 1 : 0 }}
-        transition={{ duration: 0.5 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 1.0 }}
       >
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-background/80 backdrop-blur-sm rounded-full border border-primary/10 shadow-lg">
-          <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-          <span className="text-[8px] text-secondary/40 tracking-wider font-light uppercase">
-            Inverted
-          </span>
-        </div>
+        {/* Base background with smooth color transitions */}
+        <motion.div 
+          className="absolute inset-0"
+          initial={{ opacity: 0 }}
+          animate={{ 
+            background: colors.background,
+            opacity: 1,
+          }}
+          transition={{ 
+            duration: 1.2,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          style={{ 
+            transition: 'background 1.2s cubic-bezier(0.22, 1, 0.36, 1)'
+          }} 
+        />
+        
+        {/* Paper texture with fade-in */}
+        <motion.div 
+          className="absolute inset-0 pointer-events-none" 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.015 }}
+          transition={{ duration: 1.5, delay: 0.3 }}
+        >
+          <div className="w-full h-full" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundSize: '256px 256px',
+            backgroundRepeat: 'repeat',
+          }} />
+        </motion.div>
+        
+        {/* Swiss Grid with fade-in */}
+        <motion.div 
+          className="absolute inset-0 pointer-events-none" 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.02 }}
+          transition={{ duration: 1.2, delay: 0.5 }}
+        >
+          <div className="grid grid-cols-12 h-full w-full px-8">
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="border-r border-[#1A2B4C] h-full" />
+            ))}
+          </div>
+          <div className="absolute inset-0 flex flex-col px-8">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="border-b border-[#1A2B4C] w-full flex-1" />
+            ))}
+          </div>
+        </motion.div>
+        
+        {/* Swiss design elements */}
+        {renderSwissElements()}
+        
+        {/* Main shapes */}
+        {shapes.map((shape, index) => renderShape(shape, index))}
+        
+        {/* Ambient particles */}
+        {renderParticles()}
+        
+        {/* Mouse follower glow with smooth spring */}
+        <motion.div
+          className="absolute pointer-events-none rounded-full"
+          animate={{
+            scale: 1 + Math.sin(currentTime / 3) * 0.04,
+            opacity: [0.025, 0.04, 0.025],
+            x: mouse.x - 200,
+            y: mouse.y - 200,
+          }}
+          transition={{ 
+            type: 'spring', 
+            damping: 25, 
+            stiffness: 80,
+            mass: 0.6,
+          }}
+          style={{
+            width: 400,
+            height: 400,
+            background: colors.primary,
+            willChange: 'transform, opacity',
+          }}
+        />
+        
+        {/* Secondary mouse glow with different timing */}
+        <motion.div
+          className="absolute pointer-events-none rounded-full"
+          animate={{
+            scale: 1 + Math.sin(currentTime / 2 + 0.5) * 0.06,
+            opacity: [0.02, 0.035, 0.02],
+            x: mouse.x - 100,
+            y: mouse.y - 100,
+          }}
+          transition={{ 
+            type: 'spring', 
+            damping: 25, 
+            stiffness: 80,
+            mass: 0.6,
+          }}
+          style={{
+            width: 200,
+            height: 200,
+            background: colors.accent,
+            willChange: 'transform, opacity',
+          }}
+        />
+        
+        {/* Editorial accent blocks with smooth reveals */}
+        <motion.div
+          className="absolute pointer-events-none"
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ 
+            scaleX: 1 + Math.sin(currentTime / 20) * 0.03,
+            opacity: 0.04 * (0.8 + Math.sin(currentTime / 20) * 0.1),
+          }}
+          transition={{
+            type: "spring",
+            damping: 30,
+            stiffness: 60,
+            mass: 0.6,
+            delay: 1.0,
+          }}
+          style={{
+            width: '30%',
+            height: '2px',
+            background: colors.primary,
+            bottom: '15%',
+            right: '10%',
+            transformOrigin: 'right',
+            willChange: 'transform, opacity',
+          }}
+        />
+        
+        <motion.div
+          className="absolute pointer-events-none"
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ 
+            scaleX: 1 + Math.sin(currentTime / 22 + 1) * 0.03,
+            opacity: 0.03 * (0.8 + Math.sin(currentTime / 22 + 1) * 0.1),
+          }}
+          transition={{
+            type: "spring",
+            damping: 30,
+            stiffness: 60,
+            mass: 0.6,
+            delay: 1.2,
+          }}
+          style={{
+            width: '20%',
+            height: '2px',
+            background: colors.secondary,
+            top: '20%',
+            left: '10%',
+            transformOrigin: 'left',
+            willChange: 'transform, opacity',
+          }}
+        />
+        
+        {/* Vignette with subtle pulse */}
+        <motion.div 
+          className="absolute inset-0 pointer-events-none"
+          animate={{
+            opacity: [0.8, 1, 0.8],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          style={{
+            background: `radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.2) 100%)`,
+          }}
+        />
+        
+        {/* Edge glow with subtle animation */}
+        <motion.div 
+          className="absolute inset-0 pointer-events-none"
+          animate={{
+            boxShadow: [
+              `inset 0 0 100px ${colors.primary}05`,
+              `inset 0 0 150px ${colors.primary}08`,
+              `inset 0 0 100px ${colors.primary}05`,
+            ],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
       </motion.div>
-    </div>
+    </AnimatePresence>
   );
 };
 
