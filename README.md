@@ -8,7 +8,7 @@ An experimental web experience inspired by **"Robinson" by Spitz (1995)**.
 
 Rather than presenting lyrics as plain subtitles, **Robinson** treats every line as a poster—combining editorial typography, motion, and geometric composition to create a continuously evolving visual narrative.
 
-[Live Demo](https://robinson-poster.vercel.app/)
+[Live Demo](https://robinson-adsh.vercel.app/)
 
 <br>
 
