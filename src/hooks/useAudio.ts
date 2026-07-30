@@ -1,6 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export const useAudio = (audioSrc?: string) => {
+interface UseAudioReturn {
+  currentTime: number;
+  duration: number;
+  isPlaying: boolean;
+  isLoaded: boolean;
+  togglePlay: () => void;
+  seek: (time: number) => void;
+  restart: () => void;
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+}
+
+export const useAudio = (audioSrc?: string): UseAudioReturn => {
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -178,6 +189,16 @@ export const useAudio = (audioSrc?: string) => {
     }
   }, [duration, isLoaded]);
 
+  // Restart from beginning
+  const restart = useCallback(() => {
+    if (audioRef.current && isLoaded) {
+      audioRef.current.currentTime = 0;
+      setCurrentTime(0);
+      // If currently playing, keep playing; if paused, stay paused
+      // But we want to reset the time regardless
+    }
+  }, [isLoaded]);
+
   return {
     currentTime,
     duration,
@@ -185,6 +206,7 @@ export const useAudio = (audioSrc?: string) => {
     isLoaded,
     togglePlay,
     seek,
+    restart,
     audioRef,
   };
 };

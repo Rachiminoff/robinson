@@ -139,9 +139,9 @@ const weightOptions = [
 // Font size options
 const sizeOptions = [
   { id: 'xs', label: 'XS' },
-  { id: 'sm', label: 'Small' },
+  { id: 'sm', label: 'SM' },
   { id: 'base', label: 'Base' },
-  { id: 'lg', label: 'Large' },
+  { id: 'lg', label: 'LG' },
   { id: 'xl', label: 'XL' },
   { id: '2xl', label: '2XL' },
   { id: '3xl', label: '3XL' },
@@ -167,8 +167,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const Section = ({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) => (
-    <div className="mb-4 md:mb-6">
-      <div className="flex items-center gap-2 text-secondary/60 text-[10px] tracking-[0.15em] font-light uppercase mb-2 md:mb-3">
+    <div className="mb-3 md:mb-6">
+      <div className="flex items-center gap-1.5 md:gap-2 text-secondary/60 text-[8px] md:text-[10px] tracking-[0.15em] font-light uppercase mb-1.5 md:mb-3">
         {icon}
         {title}
       </div>
@@ -193,13 +193,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
     suffix?: string;
     icon?: React.ReactNode;
   }) => (
-    <div className="mb-3 md:mb-4">
-      <div className="flex justify-between items-center text-secondary/60 text-[10px] md:text-[11px] font-light mb-1">
-        <div className="flex items-center gap-1.5 md:gap-2">
+    <div className="mb-2 md:mb-4">
+      <div className="flex justify-between items-center text-secondary/60 text-[9px] md:text-[11px] font-light mb-0.5 md:mb-1">
+        <div className="flex items-center gap-1 md:gap-2 min-w-0">
           {icon}
-          <span className="text-xs md:text-sm">{label}</span>
+          <span className="text-[10px] md:text-sm truncate">{label}</span>
         </div>
-        <span className="text-xs md:text-sm">{value}{suffix}</span>
+        <span className="text-[10px] md:text-sm flex-shrink-0 ml-2">{value}{suffix}</span>
       </div>
       <input
         type="range"
@@ -207,7 +207,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
         max={max}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value))}
-        className="w-full h-1.5 md:h-1 bg-primary/10 rounded-full appearance-none cursor-pointer accent-accent"
+        className="w-full h-2 md:h-1.5 bg-primary/10 rounded-full appearance-none cursor-pointer accent-accent touch-action-none"
         style={{
           background: `linear-gradient(to right, #e94560 ${value}%, rgba(255,255,255,0.1) ${value}%)`,
         }}
@@ -216,20 +216,20 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
   );
 
   const Toggle = ({ label, value, onChange, icon }: { label: string; value: boolean; onChange: (value: boolean) => void; icon?: React.ReactNode }) => (
-    <div className="flex items-center justify-between py-2 md:py-2.5 border-b border-primary/5 last:border-0">
-      <div className="flex items-center gap-2 text-secondary/70 text-xs md:text-sm font-light">
+    <div className="flex items-center justify-between py-1.5 md:py-2.5 border-b border-primary/5 last:border-0">
+      <div className="flex items-center gap-1.5 md:gap-2 text-secondary/70 text-[10px] md:text-sm font-light min-w-0">
         {icon}
-        <span className="text-xs md:text-sm">{label}</span>
+        <span className="text-[10px] md:text-sm truncate">{label}</span>
       </div>
       <button
         onClick={() => onChange(!value)}
-        className={`relative w-9 h-4.5 md:w-10 md:h-5 rounded-full transition-colors flex-shrink-0 ${
+        className={`relative w-8 h-4 md:w-10 md:h-5 rounded-full transition-colors flex-shrink-0 touch-manipulation ${
           value ? 'bg-accent' : 'bg-primary/20'
         }`}
       >
         <div
-          className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 md:w-4 md:h-4 rounded-full bg-white transition-transform shadow-sm ${
-            value ? 'translate-x-4.5 md:translate-x-5' : 'translate-x-0'
+          className={`absolute top-0.5 left-0.5 w-3 h-3 md:w-4 md:h-4 rounded-full bg-white transition-transform shadow-sm ${
+            value ? 'translate-x-4 md:translate-x-5' : 'translate-x-0'
           }`}
         />
       </button>
@@ -239,7 +239,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
   const TabButton = ({ tab, label, icon }: { tab: string; label: string; icon?: React.ReactNode }) => (
     <button
       onClick={() => setActiveTab(tab as any)}
-      className={`px-2.5 md:px-3 py-1.5 text-[8px] md:text-[10px] tracking-[0.1em] font-light uppercase rounded-lg transition-all flex items-center gap-1 md:gap-1.5 whitespace-nowrap ${
+      className={`px-2 md:px-3 py-1.5 text-[7px] md:text-[10px] tracking-[0.1em] font-light uppercase rounded-lg transition-all flex items-center gap-1 md:gap-1.5 whitespace-nowrap touch-manipulation min-h-[32px] md:min-h-[36px] ${
         activeTab === tab
           ? 'bg-accent/20 text-accent'
           : 'text-secondary/40 hover:text-secondary/60 hover:bg-primary/5'
@@ -259,7 +259,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 pointer-events-auto"
+        className="fixed inset-0 z-50 flex items-center justify-center p-1 md:p-4 pointer-events-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -275,8 +275,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
 
         {/* Panel */}
         <motion.div
-          className={`relative w-full max-w-2xl max-h-[95vh] md:max-h-[90vh] bg-background border border-primary/10 rounded-xl md:rounded-2xl overflow-hidden shadow-2xl pointer-events-auto ${
-            isMobile ? 'mx-2' : ''
+          className={`relative w-full max-w-2xl max-h-[98vh] md:max-h-[90vh] bg-background border border-primary/10 rounded-lg md:rounded-2xl overflow-hidden shadow-2xl pointer-events-auto ${
+            isMobile ? 'mx-1' : ''
           }`}
           initial={{ scale: 0.95, y: 20, opacity: 0 }}
           animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -285,20 +285,20 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-primary/5 px-3 md:px-6 py-3 md:py-4 flex items-center justify-between z-10">
-            <div className="flex items-center gap-2 md:gap-3">
+          <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-primary/5 px-2 md:px-6 py-2 md:py-4 flex items-center justify-between z-10">
+            <div className="flex items-center gap-1.5 md:gap-3">
               <Settings className="w-3.5 h-3.5 md:w-4 md:h-4 text-accent" />
-              <h2 className="text-secondary text-xs md:text-sm font-light tracking-widest uppercase">
+              <h2 className="text-secondary text-[10px] md:text-sm font-light tracking-widest uppercase">
                 Preferences
               </h2>
-              <span className="text-[6px] md:text-[8px] text-secondary/20 tracking-[0.1em] font-light uppercase bg-primary/5 px-1.5 md:px-2 py-0.5 rounded-full hidden sm:inline">
+              <span className="text-[5px] md:text-[8px] text-secondary/20 tracking-[0.1em] font-light uppercase bg-primary/5 px-1 md:px-2 py-0.5 rounded-full hidden sm:inline">
                 v1.0
               </span>
             </div>
-            <div className="flex items-center gap-1 md:gap-2">
+            <div className="flex items-center gap-0.5 md:gap-2">
               <motion.button
                 onClick={resetSettings}
-                className="p-1.5 text-secondary/30 hover:text-secondary/60 transition-colors rounded-lg hover:bg-primary/5"
+                className="p-1.5 text-secondary/30 hover:text-secondary/60 transition-colors rounded-lg hover:bg-primary/5 touch-manipulation"
                 whileHover={{ rotate: 180 }}
                 transition={{ duration: 0.3 }}
                 title="Reset to defaults"
@@ -307,7 +307,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
               </motion.button>
               <motion.button
                 onClick={onClose}
-                className="p-1.5 text-secondary/30 hover:text-secondary/60 transition-colors rounded-lg hover:bg-primary/5"
+                className="p-1.5 text-secondary/30 hover:text-secondary/60 transition-colors rounded-lg hover:bg-primary/5 touch-manipulation"
                 whileHover={{ scale: 1.1 }}
               >
                 <X className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -316,32 +316,32 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Tabs - horizontal scroll on mobile */}
-          <div className="px-3 md:px-6 pt-3 md:pt-4 pb-2 flex gap-1 border-b border-primary/5 overflow-x-auto scrollbar-hide">
-            <TabButton tab="language" label="Language" icon={<Languages className="w-2.5 h-2.5 md:w-3 md:h-3" />} />
-            <TabButton tab="typography" label="Typography" icon={<Type className="w-2.5 h-2.5 md:w-3 md:h-3" />} />
-            <TabButton tab="animation" label="Animation" icon={<Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3" />} />
+          <div className="px-2 md:px-6 pt-2 md:pt-4 pb-1.5 md:pb-2 flex gap-1 border-b border-primary/5 overflow-x-auto scrollbar-hide">
+            <TabButton tab="language" label="Lang" icon={<Languages className="w-2.5 h-2.5 md:w-3 md:h-3" />} />
+            <TabButton tab="typography" label="Font" icon={<Type className="w-2.5 h-2.5 md:w-3 md:h-3" />} />
+            <TabButton tab="animation" label="Motion" icon={<Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3" />} />
             <TabButton tab="layout" label="Layout" icon={<Layout className="w-2.5 h-2.5 md:w-3 md:h-3" />} />
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto max-h-[calc(85vh-120px)] md:max-h-[calc(90vh-160px)] p-3 md:p-6">
+          <div className="overflow-y-auto max-h-[calc(90vh-110px)] md:max-h-[calc(90vh-160px)] p-2 md:p-6">
             {/* Language Tab */}
             {activeTab === 'language' && (
               <div>
-                <Section title="Display Language" icon={<Languages className="w-3 h-3 md:w-3.5 md:h-3.5" />}>
-                  <div className="grid grid-cols-3 gap-1.5 md:gap-2 mb-3 md:mb-4">
+                <Section title="Display Language" icon={<Languages className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />}>
+                  <div className="grid grid-cols-3 gap-1 md:gap-2 mb-2 md:mb-4">
                     {(['japanese', 'english', 'bilingual'] as LanguagePreference[]).map((option) => (
                       <button
                         key={option}
                         onClick={() => updateSettings({ languagePreference: option })}
-                        className={`px-2 md:px-3 py-1.5 md:py-2 text-[8px] md:text-[10px] tracking-[0.1em] font-light uppercase rounded-lg border transition-all ${
+                        className={`px-1 md:px-3 py-1.5 md:py-2 text-[7px] md:text-[10px] tracking-[0.1em] font-light uppercase rounded-lg border transition-all touch-manipulation min-h-[32px] ${
                           settings.languagePreference === option
                             ? 'border-accent bg-accent/10 text-accent'
                             : 'border-primary/10 text-secondary/40 hover:border-primary/20 hover:text-secondary/60'
                         }`}
                       >
                         {option === 'japanese' && '日本語'}
-                        {option === 'english' && 'Eng'}
+                        {option === 'english' && 'En'}
                         {option === 'bilingual' && 'Bi'}
                       </button>
                     ))}
@@ -351,7 +351,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                     label="English size"
                     value={settings.englishSize}
                     onChange={(value) => updateSettings({ englishSize: value })}
-                    icon={<Type className="w-3 h-3 md:w-3.5 md:h-3.5 text-secondary/40" />}
+                    icon={<Type className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 text-secondary/40" />}
                   />
                 </Section>
               </div>
@@ -360,7 +360,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
             {/* Typography Tab */}
             {activeTab === 'typography' && (
               <div>
-                <Section title="Font Family" icon={<Type className="w-3 h-3 md:w-3.5 md:h-3.5" />}>
+                <Section title="Font Family" icon={<Type className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />}>
                   {/* Search bar */}
                   <div className="relative mb-2 md:mb-3">
                     <input
@@ -368,29 +368,29 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                       placeholder="Search fonts..."
                       value={fontSearch}
                       onChange={(e) => setFontSearch(e.target.value)}
-                      className="w-full px-3 py-1.5 md:py-2 text-xs md:text-sm bg-primary/5 border border-primary/10 rounded-lg text-secondary/70 placeholder:text-secondary/30 focus:outline-none focus:border-accent/30 transition-colors"
+                      className="w-full px-2 md:px-3 py-1.5 md:py-2 text-[10px] md:text-sm bg-primary/5 border border-primary/10 rounded-lg text-secondary/70 placeholder:text-secondary/30 focus:outline-none focus:border-accent/30 transition-colors"
                     />
                   </div>
 
                   {/* Font grid */}
-                  <div className="grid grid-cols-2 gap-1.5 md:gap-2 max-h-[150px] md:max-h-[200px] overflow-y-auto pr-1">
+                  <div className="grid grid-cols-2 gap-1 md:gap-2 max-h-[120px] md:max-h-[200px] overflow-y-auto pr-0.5 md:pr-1">
                     {filteredFonts.map((font) => (
                       <button
                         key={font.id}
                         onClick={() => updateSettings({ fontFamily: font.id as FontFamily })}
-                        className={`px-2 md:px-3 py-1.5 md:py-2 text-left rounded-lg border transition-all ${
+                        className={`px-1.5 md:px-3 py-1 md:py-2 text-left rounded-lg border transition-all touch-manipulation min-h-[36px] ${
                           settings.fontFamily === font.id
                             ? 'border-accent bg-accent/10'
                             : 'border-primary/10 hover:border-primary/20 hover:bg-primary/5'
                         }`}
                       >
                         <div 
-                          className="text-xs md:text-sm text-secondary/80 truncate"
+                          className="text-[10px] md:text-sm text-secondary/80 truncate"
                           style={{ fontFamily: font.fontFamily }}
                         >
                           {font.label}
                         </div>
-                        <div className="text-[6px] md:text-[8px] text-secondary/30 tracking-[0.1em] font-light uppercase mt-0.5">
+                        <div className="text-[5px] md:text-[8px] text-secondary/30 tracking-[0.1em] font-light uppercase mt-0.5">
                           {font.category}
                         </div>
                       </button>
@@ -398,13 +398,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                   </div>
                 </Section>
 
-                <Section title="Font Weight" icon={<Type className="w-3 h-3 md:w-3.5 md:h-3.5" />}>
-                  <div className="grid grid-cols-3 gap-1.5 md:gap-2">
+                <Section title="Weight" icon={<Type className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />}>
+                  <div className="grid grid-cols-3 gap-1 md:gap-2">
                     {weightOptions.map((weight) => (
                       <button
                         key={weight.id}
                         onClick={() => updateSettings({ fontWeight: weight.id as FontWeight })}
-                        className={`px-1.5 md:px-2 py-1 md:py-1.5 text-[8px] md:text-[10px] tracking-[0.05em] uppercase rounded-lg border transition-all ${
+                        className={`px-1 md:px-2 py-1 md:py-1.5 text-[7px] md:text-[10px] tracking-[0.05em] uppercase rounded-lg border transition-all touch-manipulation min-h-[28px] ${
                           settings.fontWeight === weight.id
                             ? 'border-accent bg-accent/10 text-accent'
                             : 'border-primary/10 text-secondary/40 hover:border-primary/20 hover:text-secondary/60'
@@ -418,13 +418,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                   </div>
                 </Section>
 
-                <Section title="Size" icon={<Type className="w-3 h-3 md:w-3.5 md:h-3.5" />}>
-                  <div className="grid grid-cols-4 gap-1.5 md:gap-2">
+                <Section title="Size" icon={<Type className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />}>
+                  <div className="grid grid-cols-4 gap-1 md:gap-2">
                     {sizeOptions.map((size) => (
                       <button
                         key={size.id}
                         onClick={() => updateSettings({ fontSize: size.id as FontSize })}
-                        className={`px-1.5 md:px-2 py-1 md:py-1.5 text-[8px] md:text-[10px] tracking-[0.05em] uppercase rounded-lg border transition-all ${
+                        className={`px-1 md:px-2 py-1 md:py-1.5 text-[7px] md:text-[10px] tracking-[0.05em] uppercase rounded-lg border transition-all touch-manipulation min-h-[28px] ${
                           settings.fontSize === size.id
                             ? 'border-accent bg-accent/10 text-accent'
                             : 'border-primary/10 text-secondary/40 hover:border-primary/20 hover:text-secondary/60'
@@ -437,17 +437,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                 </Section>
 
                 <Slider
-                  label="Letter spacing"
+                  label="Spacing"
                   value={settings.letterSpacing}
                   onChange={(value) => updateSettings({ letterSpacing: value })}
-                  icon={<AlignLeft className="w-3 h-3 md:w-3.5 md:h-3.5 text-secondary/40" />}
+                  icon={<AlignLeft className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 text-secondary/40" />}
                 />
                 
                 <Slider
-                  label="Text opacity"
+                  label="Opacity"
                   value={settings.textOpacity}
                   onChange={(value) => updateSettings({ textOpacity: value })}
-                  icon={<Eye className="w-3 h-3 md:w-3.5 md:h-3.5 text-secondary/40" />}
+                  icon={<Eye className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 text-secondary/40" />}
                 />
               </div>
             )}
@@ -455,19 +455,19 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
             {/* Animation Tab */}
             {activeTab === 'animation' && (
               <div>
-                <Section title="Motion" icon={<Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5" />}>
-                  <div className="grid grid-cols-3 gap-1.5 md:gap-2 mb-3 md:mb-4">
+                <Section title="Motion" icon={<Sparkles className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />}>
+                  <div className="grid grid-cols-3 gap-1 md:gap-2 mb-2 md:mb-4">
                     {(['slow', 'normal', 'fast'] as AnimationSpeed[]).map((speed) => (
                       <button
                         key={speed}
                         onClick={() => updateSettings({ animationSpeed: speed })}
-                        className={`px-2 md:px-3 py-1.5 md:py-2 text-[8px] md:text-[10px] tracking-[0.1em] font-light uppercase rounded-lg border transition-all ${
+                        className={`px-1 md:px-3 py-1.5 md:py-2 text-[7px] md:text-[10px] tracking-[0.1em] font-light uppercase rounded-lg border transition-all touch-manipulation min-h-[32px] ${
                           settings.animationSpeed === speed
                             ? 'border-accent bg-accent/10 text-accent'
                             : 'border-primary/10 text-secondary/40 hover:border-primary/20 hover:text-secondary/60'
                         }`}
                       >
-                        {speed === 'slow' && 'Slow'}
+                        {speed === 'slow' && 'Slw'}
                         {speed === 'normal' && 'Norm'}
                         {speed === 'fast' && 'Fast'}
                       </button>
@@ -476,17 +476,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                   
                   <div className="space-y-0.5 md:space-y-1">
                     <Toggle
-                      label="Enable animations"
+                      label="Animations"
                       value={settings.enableAnimations}
                       onChange={(value) => updateSettings({ enableAnimations: value })}
-                      icon={<Play className="w-3 h-3 md:w-3.5 md:h-3.5 text-secondary/40" />}
+                      icon={<Play className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 text-secondary/40" />}
                     />
                     
                     <Toggle
-                      label="Enable breathing effect"
+                      label="Breathing"
                       value={settings.enableBreathing}
                       onChange={(value) => updateSettings({ enableBreathing: value })}
-                      icon={<Moon className="w-3 h-3 md:w-3.5 md:h-3.5 text-secondary/40" />}
+                      icon={<Moon className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 text-secondary/40" />}
                     />
                   </div>
                 </Section>
@@ -496,34 +496,34 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
             {/* Layout Tab */}
             {activeTab === 'layout' && (
               <div>
-                <Section title="Display" icon={<Layout className="w-3 h-3 md:w-3.5 md:h-3.5" />}>
+                <Section title="Display" icon={<Layout className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />}>
                   <div className="space-y-0.5 md:space-y-1">
                     <Toggle
-                      label="Show metadata"
+                      label="Metadata"
                       value={settings.showMetadata}
                       onChange={(value) => updateSettings({ showMetadata: value })}
-                      icon={<Layers className="w-3 h-3 md:w-3.5 md:h-3.5 text-secondary/40" />}
+                      icon={<Layers className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 text-secondary/40" />}
                     />
                     
                     <Toggle
-                      label="Show background"
+                      label="Background"
                       value={settings.showBackground}
                       onChange={(value) => updateSettings({ showBackground: value })}
-                      icon={<Grid className="w-3 h-3 md:w-3.5 md:h-3.5 text-secondary/40" />}
+                      icon={<Grid className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 text-secondary/40" />}
                     />
                     
                     <Toggle
-                      label="Enable glow effects"
+                      label="Glow"
                       value={settings.enableGlow}
                       onChange={(value) => updateSettings({ enableGlow: value })}
-                      icon={<Sun className="w-3 h-3 md:w-3.5 md:h-3.5 text-secondary/40" />}
+                      icon={<Sun className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 text-secondary/40" />}
                     />
                     
                     <Toggle
-                      label="Enable particles"
+                      label="Particles"
                       value={settings.enableParticles}
                       onChange={(value) => updateSettings({ enableParticles: value })}
-                      icon={<Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-secondary/40" />}
+                      icon={<Sparkles className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 text-secondary/40" />}
                     />
                   </div>
                 </Section>
@@ -532,11 +532,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-primary/5 px-3 md:px-6 py-2 md:py-3 flex flex-col xs:flex-row justify-between items-center gap-1 xs:gap-0 text-[6px] md:text-[8px] text-secondary/30 tracking-[0.1em] font-light uppercase">
-            <span>Settings saved automatically</span>
-            <div className="flex items-center gap-2 md:gap-3">
+          <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-primary/5 px-2 md:px-6 py-1.5 md:py-3 flex flex-col xs:flex-row justify-between items-center gap-0.5 xs:gap-0 text-[5px] md:text-[8px] text-secondary/30 tracking-[0.1em] font-light uppercase">
+            <span className="text-[5px] md:text-[8px]">Settings saved</span>
+            <div className="flex items-center gap-1 md:gap-3">
               <span className="w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-accent/30" />
-              <span className="text-[5px] md:text-[8px]">Stored locally</span>
+              <span className="text-[4px] md:text-[8px]">Stored locally</span>
             </div>
           </div>
         </motion.div>

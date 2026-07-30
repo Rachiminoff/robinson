@@ -66,6 +66,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   const { settings, getFontFamily, getFontWeight } = useSettings();
   const [isMobile, setIsMobile] = useState(false);
   const [previousIndex, setPreviousIndex] = useState<number>(-1);
+  const [isInGap, setIsInGap] = useState<boolean>(false);
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -77,15 +78,44 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Find current lyric - memoized
+  // Find current lyric - memoized with gap detection
   const currentLyric = useMemo(() => {
+    // Define gap threshold (in seconds) - gaps longer than this will show nothing
+    const GAP_THRESHOLD = 0.15;
+    
     for (let i = 0; i < lyricsData.length; i++) {
       const lyric = lyricsData[i];
       const next = lyricsData[i + 1];
-      if (currentTime >= lyric.start && (next ? currentTime < next.start : true)) {
+      
+      // Check if current time is within this lyric's range
+      if (currentTime >= lyric.start && currentTime < lyric.end) {
+        setIsInGap(false);
         return { lyric, index: i };
       }
+      
+      // Check if we're in a gap between lyrics
+      if (next && currentTime >= lyric.end && currentTime < next.start) {
+        const gapDuration = next.start - lyric.end;
+        // If gap is longer than threshold, show nothing (true gap)
+        // If gap is very small, keep showing the previous lyric (for natural transitions)
+        if (gapDuration > GAP_THRESHOLD) {
+          setIsInGap(true);
+          return null;
+        } else {
+          // Small gap - keep showing the previous lyric
+          setIsInGap(false);
+          return { lyric, index: i };
+        }
+      }
     }
+    
+    // Check if we're past the last lyric
+    const lastLyric = lyricsData[lyricsData.length - 1];
+    if (lastLyric && currentTime >= lastLyric.end) {
+      setIsInGap(true);
+      return null;
+    }
+    
     return null;
   }, [currentTime]);
 
@@ -101,8 +131,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     if (!currentLyric) return null;
     
     const { index } = currentLyric;
-    // Remove unused total variable
-    // const total = lyricsData.length;
     
     // Cycle through patterns to ensure variety
     const patterns: CompositionPattern[] = [
@@ -202,11 +230,29 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     };
   }, [currentLyric, currentTime, isPlaying, compositionConfig]);
 
-  // If no lyric, show nothing
-  if (!currentLyric || !composition || !bgConfig || !compositionConfig) return null;
+  // If no lyric or in a gap, show a blank/ambient state
+  if (!currentLyric || !composition || !bgConfig || !compositionConfig || isInGap) {
+    // Show just the background with ambient shapes
+    return (
+      <div className="fixed inset-0 z-10 overflow-hidden">
+        {settings.showBackground && bgConfig && (
+          <InteractiveBackground 
+            composition={bgConfig}
+            isPlaying={isPlaying}
+            currentTime={currentTime}
+          />
+        )}
+        {/* Subtle ambient indicator for gaps - optional */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-5">
+          <div className="text-secondary/10 text-[8px] tracking-[0.5em] uppercase font-light select-none">
+            · · ·
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const { lyric, index } = currentLyric;
-  // Remove unused layout from destructuring
   const { pattern, animation, mood, emphasis, metadata } = compositionConfig;
   
   // Apply settings to determine what to show
@@ -224,20 +270,47 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   // Get font family from settings
   const fontFamily = getFontFamily();
   const fontWeight = getFontWeight();
-  // Remove unused fontSize - it's applied through the className system
-  // const fontSizeClass = getFontSize();
 
-  // Get scale based on pattern and emphasis
+  // Get mobile-optimized pattern (with variety)
+  const getMobilePattern = (): CompositionPattern => {
+    // Use the same pattern but with mobile-friendly adjustments
+    // Some patterns work better on mobile than others
+    const mobileFriendlyPatterns: CompositionPattern[] = [
+      'oversized-japanese',
+      'vertical-japanese-horizontal-english',
+      'japanese-left-english-right',
+      'opposite-corners',
+      'japanese-fill-english-notes',
+    ];
+    
+    // Cycle through mobile-friendly patterns
+    const mobilePatternIndex = index % mobileFriendlyPatterns.length;
+    return mobileFriendlyPatterns[mobilePatternIndex];
+  };
+
+  // Get mobile pattern
+  const mobilePattern = isMobile ? getMobilePattern() : pattern;
+
+  // Get scale based on pattern and emphasis (mobile optimized)
   const getJapaneseScale = () => {
     if (isMobile) {
-      if (pattern === 'oversized-japanese' || pattern === 'japanese-fill-english-notes') {
-        return 'text-5xl sm:text-6xl';
+      // Mobile-specific sizing - smaller but still readable
+      if (mobilePattern === 'oversized-japanese' || mobilePattern === 'japanese-fill-english-notes') {
+        return 'text-4xl sm:text-5xl';
       }
-      if (pattern === 'cropped-japanese') return 'text-6xl sm:text-7xl';
-      if (pattern === 'vertical-japanese-horizontal-english') return 'text-3xl sm:text-4xl';
+      if (mobilePattern === 'vertical-japanese-horizontal-english') {
+        return 'text-3xl sm:text-4xl';
+      }
+      if (mobilePattern === 'japanese-left-english-right') {
+        return 'text-3xl sm:text-4xl';
+      }
+      if (mobilePattern === 'opposite-corners') {
+        return 'text-3xl sm:text-4xl';
+      }
       return 'text-4xl sm:text-5xl';
     }
     
+    // Desktop sizes
     if (pattern === 'oversized-japanese' || pattern === 'japanese-fill-english-notes') {
       return 'text-8xl md:text-9xl lg:text-[10rem]';
     }
@@ -252,12 +325,14 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     const sizeMultiplier = settings.englishSize / 100;
     
     if (isMobile) {
-      if (pattern === 'oversized-japanese' || pattern === 'japanese-fill-english-notes') {
+      // Mobile-specific English sizing
+      if (mobilePattern === 'oversized-japanese' || mobilePattern === 'japanese-fill-english-notes') {
         return `text-xs sm:text-sm`;
       }
-      if (pattern === 'opposite-corners') return `text-lg sm:text-xl`;
-      if (pattern === 'japanese-left-english-right') return `text-base sm:text-lg`;
-      return `text-sm sm:text-base`;
+      if (mobilePattern === 'opposite-corners') return `text-sm sm:text-base`;
+      if (mobilePattern === 'japanese-left-english-right') return `text-xs sm:text-sm`;
+      if (mobilePattern === 'vertical-japanese-horizontal-english') return `text-xs sm:text-sm`;
+      return `text-xs sm:text-sm`;
     }
     
     let baseSize = '';
@@ -275,7 +350,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     
     // Apply size multiplier
     if (sizeMultiplier < 1) {
-      // Reduce size
       const sizes: Record<string, string> = {
         'text-sm': 'text-xs',
         'text-base': 'text-sm',
@@ -295,12 +369,27 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   const japaneseSize = getJapaneseScale();
   const englishSize = getEnglishScale();
 
-  // Get layout classes based on pattern
+  // Get layout classes based on pattern (mobile optimized)
   const getPatternLayout = () => {
     if (isMobile) {
-      return 'flex flex-col items-center justify-center w-full gap-6';
+      // Mobile-specific layouts
+      switch (mobilePattern) {
+        case 'oversized-japanese':
+          return 'flex flex-col items-center justify-center w-full relative px-4';
+        case 'vertical-japanese-horizontal-english':
+          return 'flex flex-col items-center justify-center w-full relative px-4';
+        case 'japanese-left-english-right':
+          return 'flex flex-col items-center justify-center w-full relative px-4';
+        case 'opposite-corners':
+          return 'flex flex-col items-center justify-center w-full relative px-4';
+        case 'japanese-fill-english-notes':
+          return 'flex flex-col items-center justify-center w-full relative px-4';
+        default:
+          return 'flex flex-col items-center justify-center w-full gap-4 px-4';
+      }
     }
     
+    // Desktop layouts
     switch (pattern) {
       case 'oversized-japanese':
         return 'flex flex-col items-center justify-center w-full relative';
@@ -327,10 +416,60 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     }
   };
 
-  // Get text positioning styles - Japanese
+  // Get text positioning styles - Japanese (mobile optimized)
   const getJapanesePosition = (): React.CSSProperties => {
-    if (isMobile) return { position: 'relative', zIndex: 1 };
+    if (isMobile) {
+      // Mobile-specific positioning
+      switch (mobilePattern) {
+        case 'vertical-japanese-horizontal-english':
+          return { 
+            writingMode: 'vertical-rl' as const, 
+            textOrientation: 'mixed' as const, 
+            position: 'relative', 
+            zIndex: 1,
+            maxHeight: '80vh',
+            fontSize: '1.8rem',
+            lineHeight: 1.4,
+          };
+        case 'japanese-left-english-right':
+          return { 
+            textAlign: 'left' as const, 
+            position: 'relative', 
+            zIndex: 1,
+            width: '100%',
+            paddingRight: '1rem',
+          };
+        case 'opposite-corners':
+          return { 
+            position: 'relative' as const, 
+            zIndex: 1,
+            alignSelf: 'flex-start',
+            marginBottom: '0.5rem',
+          };
+        case 'oversized-japanese':
+          return { 
+            position: 'relative', 
+            zIndex: 1, 
+            textAlign: 'center' as const,
+            fontSize: '2.5rem',
+            lineHeight: 1.2,
+            maxWidth: '100%',
+            wordBreak: 'break-word',
+          };
+        case 'japanese-fill-english-notes':
+          return { 
+            position: 'relative', 
+            zIndex: 1, 
+            textAlign: 'center' as const,
+            fontSize: '2rem',
+            lineHeight: 1.3,
+          };
+        default:
+          return { position: 'relative', zIndex: 1, textAlign: 'center' as const };
+      }
+    }
     
+    // Desktop positioning
     switch (pattern) {
       case 'japanese-left-english-right':
         return { textAlign: 'left' as const, width: '60%', position: 'relative', zIndex: 1 };
@@ -360,10 +499,65 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     }
   };
 
-  // Get text positioning styles - English
+  // Get text positioning styles - English (mobile optimized)
   const getEnglishPosition = (): React.CSSProperties => {
-    if (isMobile) return { position: 'relative', zIndex: 2, marginTop: '0.5rem' };
+    if (isMobile) {
+      // Mobile-specific English positioning
+      switch (mobilePattern) {
+        case 'vertical-japanese-horizontal-english':
+          return { 
+            position: 'relative' as const, 
+            zIndex: 2, 
+            marginTop: '0.5rem',
+            textAlign: 'center' as const,
+            maxWidth: '90%',
+            padding: '0.25rem 0.75rem',
+          };
+        case 'japanese-left-english-right':
+          return { 
+            position: 'relative' as const, 
+            zIndex: 2, 
+            marginTop: '0.25rem',
+            textAlign: 'left' as const,
+            paddingLeft: '0.5rem',
+            borderLeft: '2px solid rgba(255,255,255,0.1)',
+          };
+        case 'opposite-corners':
+          return { 
+            position: 'relative' as const, 
+            zIndex: 2,
+            alignSelf: 'flex-end',
+            marginTop: '0.5rem',
+            textAlign: 'right' as const,
+          };
+        case 'oversized-japanese':
+          return { 
+            position: 'relative' as const, 
+            zIndex: 2, 
+            marginTop: '0.5rem',
+            textAlign: 'center' as const,
+            padding: '0.25rem 0.75rem',
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            backdropFilter: 'blur(4px)',
+            borderRadius: '4px',
+          };
+        case 'japanese-fill-english-notes':
+          return { 
+            position: 'relative' as const, 
+            zIndex: 2, 
+            marginTop: '0.5rem',
+            textAlign: 'center' as const,
+            padding: '0.25rem 0.75rem',
+            backgroundColor: 'rgba(0,0,0,0.2)',
+            backdropFilter: 'blur(4px)',
+            borderRadius: '4px',
+          };
+        default:
+          return { position: 'relative', zIndex: 2, marginTop: '0.5rem', textAlign: 'center' as const };
+      }
+    }
     
+    // Desktop positioning
     switch (pattern) {
       case 'japanese-left-english-right':
         return { textAlign: 'right' as const, width: '35%', paddingTop: '1rem', position: 'relative', zIndex: 2 };
@@ -440,8 +634,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   // Animation variants based on style
   const getAnimationVariants = (type: 'japanese' | 'english') => {
     const isJapanese = type === 'japanese';
-    // Remove unused progress variable
-    // const progress = (currentTime - lyric.start) / (lyric.end - lyric.start || 1);
     
     // If animations are disabled, return simple fade
     if (!settings.enableAnimations) {
@@ -449,6 +641,15 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
         initial: { opacity: 0 },
         animate: { opacity: 1 },
         exit: { opacity: 0 },
+      };
+    }
+    
+    // Mobile gets simpler animations for performance
+    if (isMobile) {
+      return {
+        initial: { opacity: 0, y: 10 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -10 },
       };
     }
     
@@ -598,6 +799,16 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     // Apply text opacity from settings
     const textOpacity = settings.textOpacity / 100;
     
+    // On mobile, reduce effects for performance
+    if (isMobile) {
+      return {
+        ...base,
+        letterSpacing: isJapanese ? `0.${Math.round(letterSpacingValue * 4)}em` : `0.${Math.round(letterSpacingValue * 8)}em`,
+        opacity: textOpacity,
+        textShadow: '0 2px 20px rgba(0,0,0,0.3)',
+      };
+    }
+    
     // Mood-based effects (with settings overrides)
     if (mood === 'dramatic' && settings.enableGlow) {
       return {
@@ -660,27 +871,25 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     
     if (isJapanese) {
       return {
-        ...(isPrimary ? {} : {}),
         fontSize: isPrimary ? undefined : '0.8em',
-        lineHeight: 1.1,
+        lineHeight: isMobile ? 1.4 : 1.1,
       };
     } else {
       return {
-        ...(isPrimary ? {} : {}),
-        fontSize: isPrimary ? '0.9em' : '0.7em',
+        fontSize: isPrimary ? (isMobile ? '0.85em' : '0.9em') : (isMobile ? '0.7em' : '0.7em'),
         textTransform: 'uppercase' as const,
-        lineHeight: 1.3,
-        letterSpacing: '0.05em',
+        lineHeight: isMobile ? 1.4 : 1.3,
+        letterSpacing: isMobile ? '0.04em' : '0.05em',
       };
     }
   };
 
-  // Japanese character animation
+  // Japanese character animation (mobile optimized)
   const renderJapaneseCharacters = () => {
     const chars = lyric.japanese.split('');
-    const isAnimated = ['character-reveal', 'word-assembly', 'geometry-emerge'].includes(animation) && settings.enableAnimations;
+    const isAnimated = ['character-reveal', 'word-assembly', 'geometry-emerge'].includes(animation) && settings.enableAnimations && !isMobile;
     
-    if (!isAnimated || isMobile) {
+    if (!isAnimated) {
       return lyric.japanese;
     }
     
@@ -711,13 +920,13 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     ));
   };
 
-  // English word animation
+  // English word animation (mobile optimized)
   const renderEnglishWords = () => {
     if (!lyric.english) return null;
     const words = lyric.english.split(' ');
-    const isAnimated = ['word-stagger', 'word-assembly'].includes(animation) && settings.enableAnimations;
+    const isAnimated = ['word-stagger', 'word-assembly'].includes(animation) && settings.enableAnimations && !isMobile;
     
-    if (!isAnimated || isMobile) {
+    if (!isAnimated) {
       return lyric.english;
     }
     
@@ -764,7 +973,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   const englishVariants = getAnimationVariants('english');
 
   // Determine if content should breathe (respect settings)
-  const shouldBreathe = isPlaying && ['elegant', 'delicate'].includes(mood) && settings.enableBreathing && settings.enableAnimations;
+  const shouldBreathe = isPlaying && ['elegant', 'delicate'].includes(mood) && settings.enableBreathing && settings.enableAnimations && !isMobile;
 
   // Safely get text shadow
   const getJapaneseTextShadow = () => {
@@ -783,9 +992,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   return (
     <div 
       className="fixed inset-0 z-10 overflow-hidden"
-      // Remove unused onMouseEnter/onMouseLeave
-      // onMouseEnter={() => setIsHovered(true)}
-      // onMouseLeave={() => setIsHovered(false)}
     >
       {/* Background - respect showBackground setting */}
       {settings.showBackground && (
@@ -798,7 +1004,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
       
       {/* Content Layer */}
       <div className={`absolute inset-0 flex items-center justify-center z-10 ${
-        isMobile ? 'px-4 py-16' : 'px-8 md:px-16'
+        isMobile ? 'px-3 py-8' : 'px-8 md:px-16'
       }`}>
         <AnimatePresence mode="wait">
           <motion.div
@@ -815,12 +1021,18 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
             {/* Japanese - Primary text */}
             {finalShowJapanese && (
               <motion.div
-                className={`${japaneseSize} ${pattern === 'vertical-japanese-horizontal-english' ? 'writing-vertical' : ''} relative`}
+                className={`${japaneseSize} ${isMobile && mobilePattern === 'vertical-japanese-horizontal-english' ? 'writing-vertical' : pattern === 'vertical-japanese-horizontal-english' && !isMobile ? 'writing-vertical' : ''} relative`}
                 style={{
                   ...japaneseStyle,
                   ...japaneseEffects,
                   ...japanesePos,
                   textShadow: getJapaneseTextShadow(),
+                  ...(isMobile && mobilePattern === 'oversized-japanese' ? { fontSize: '2.5rem' } : {}),
+                  ...(isMobile && mobilePattern === 'vertical-japanese-horizontal-english' ? { 
+                    fontSize: '1.8rem', 
+                    maxHeight: '80vh',
+                    overflow: 'visible',
+                  } : {}),
                 }}
                 variants={japaneseVariants}
                 initial="initial"
@@ -850,7 +1062,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
                 )}
                 
                 {/* Glow underline for dramatic moments - respect glow setting */}
-                {isPlaying && mood === 'dramatic' && settings.enableGlow && settings.enableAnimations && (
+                {!isMobile && isPlaying && mood === 'dramatic' && settings.enableGlow && settings.enableAnimations && (
                   <motion.div
                     className="absolute -bottom-4 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-current/40 to-transparent"
                     animate={{
@@ -870,7 +1082,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
             {/* English - Annotation text - always visible with proper z-index */}
             {finalShowEnglish && lyric.english && (
               <motion.div
-                className={`${englishSize} ${pattern === 'opposite-corners' ? 'text-right' : ''}`}
+                className={`${englishSize} ${pattern === 'opposite-corners' && !isMobile ? 'text-right' : ''}`}
                 style={{
                   ...englishStyle,
                   ...englishEffects,
@@ -879,6 +1091,14 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
                   textShadow: getEnglishTextShadow(),
                   position: englishPos.position || 'relative',
                   zIndex: englishPos.zIndex || 2,
+                  ...(isMobile && mobilePattern === 'opposite-corners' ? { 
+                    alignSelf: 'flex-end',
+                    marginTop: '0.5rem',
+                  } : {}),
+                  ...(isMobile && mobilePattern === 'japanese-left-english-right' ? {
+                    paddingLeft: '0.5rem',
+                    borderLeft: '2px solid rgba(255,255,255,0.1)',
+                  } : {}),
                 }}
                 variants={englishVariants}
                 initial="initial"
@@ -893,7 +1113,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
                 {renderEnglishWords()}
                 
                 {/* Shimmer effect for delicate mood - respect animations */}
-                {isPlaying && mood === 'delicate' && settings.enableAnimations && (
+                {!isMobile && isPlaying && mood === 'delicate' && settings.enableAnimations && (
                   <motion.div
                     className="absolute inset-0 pointer-events-none overflow-hidden"
                     initial={{ opacity: 0 }}
@@ -920,7 +1140,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
       </div>
       
       {/* Metadata - Editorial style - respect showMetadata setting */}
-      {settings.showMetadata && (
+      {settings.showMetadata && !isMobile && (
         <div 
           className={`absolute ${metadata.position === 'bottom-left' ? 'bottom-6 left-6' : 
             metadata.position === 'bottom-right' ? 'bottom-6 right-6' :
@@ -951,7 +1171,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
       )}
       
       {/* Minimal progress indicator - respect animations */}
-      {settings.enableAnimations && (
+      {settings.enableAnimations && !isMobile && (
         <div
           className="absolute rounded-full border z-20"
           style={{
@@ -986,7 +1206,17 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
         
         @media (max-width: 768px) {
           .writing-vertical {
-            writing-mode: horizontal-tb;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            max-height: 80vh;
+            font-size: 1.8rem;
+            line-height: 1.4;
+          }
+          
+          /* Ensure vertical text doesn't overflow */
+          .writing-vertical span {
+            display: block;
+            padding: 0.1rem 0;
           }
         }
       `}</style>

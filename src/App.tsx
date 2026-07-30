@@ -7,6 +7,7 @@ import Controls from './components/Controls';
 import Metadata from './components/Metadata';
 import SplashScreen from './components/SplashScreen';
 import Countdown from './components/Countdown';
+import EndingScreen from './components/EndingScreen';
 import { useAudio } from './hooks/useAudio';
 import { SettingsProvider } from './context/SettingsContext';
 
@@ -16,6 +17,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('bilingual');
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [showCountdown, setShowCountdown] = useState<boolean>(false);
+  const [showEnding, setShowEnding] = useState<boolean>(false);
   const [showMetadata, setShowMetadata] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [showKeyboardHint, setShowKeyboardHint] = useState<boolean>(true);
@@ -23,7 +25,7 @@ const App: React.FC = () => {
   
   // Audio setup
   const audioSrc = '/music/Robinson.mp3'; 
-  const { currentTime, duration, isPlaying, isLoaded, togglePlay, seek } = useAudio(audioSrc);
+  const { currentTime, duration, isPlaying, isLoaded, togglePlay, seek, restart } = useAudio(audioSrc);
 
   // Handle splash screen completion
   const handleSplashComplete = () => {
@@ -37,6 +39,49 @@ const App: React.FC = () => {
     setTimeout(() => {
       if (!isPlaying) togglePlay();
     }, 300);
+  };
+
+  // Handle song ending
+  useEffect(() => {
+    if (isLoaded && duration > 0 && currentTime >= duration && isPlaying) {
+      // Song has ended
+      togglePlay(); // Stop playback
+      setShowEnding(true);
+    }
+  }, [currentTime, duration, isPlaying, isLoaded, togglePlay]);
+
+  // Handle play again
+  const handlePlayAgain = () => {
+    setShowEnding(false);
+    // Reset the song
+    restart();
+    setTimeout(() => {
+      togglePlay();
+    }, 300);
+  };
+
+  // Handle restart (go back to beginning without ending screen)
+  const handleRestart = () => {
+    setShowEnding(false);
+    restart();
+    setTimeout(() => {
+      if (!isPlaying) togglePlay();
+    }, 300);
+  };
+
+  // Handle share (optional - can be implemented with Web Share API)
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Robinson - SPITZ',
+        text: 'Check out this beautiful lyric experience for Robinson by SPITZ!',
+        url: window.location.href,
+      }).catch(() => {});
+    } else {
+      // Fallback - copy to clipboard
+      navigator.clipboard?.writeText(window.location.href);
+      // You could show a toast notification here
+    }
   };
 
   // Toggle view mode (still needed for keyboard shortcut V)
@@ -61,8 +106,8 @@ const App: React.FC = () => {
   // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Skip keyboard controls during splash and countdown
-      if (showSplash || showCountdown) return;
+      // Skip keyboard controls during splash, countdown, and ending
+      if (showSplash || showCountdown || showEnding) return;
       
       if (e.key === ' ' || e.key === 'Space') {
         e.preventDefault();
@@ -86,7 +131,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, seek, currentTime, duration, toggleViewMode, toggleFullscreen, showSplash, showCountdown]);
+  }, [togglePlay, seek, currentTime, duration, toggleViewMode, toggleFullscreen, showSplash, showCountdown, showEnding]);
 
   return (
     <SettingsProvider>
@@ -98,7 +143,7 @@ const App: React.FC = () => {
         {showCountdown && <Countdown onComplete={handleCountdownComplete} duration={5} />}
         
         {/* Main Content - only shown after splash and countdown */}
-        {!showSplash && !showCountdown && (
+        {!showSplash && !showCountdown && !showEnding && (
           <>
             {/* Poster Composition Engine - Unified background + lyrics */}
             <PosterComposition 
@@ -127,9 +172,22 @@ const App: React.FC = () => {
             />
           </>
         )}
+
+        {/* Ending Screen */}
+        {!showSplash && !showCountdown && showEnding && (
+          <EndingScreen
+            isVisible={showEnding}
+            onPlayAgain={handlePlayAgain}
+            onRestart={handleRestart}
+            onShare={handleShare}
+            totalDuration={duration}
+            songTitle="Robinson"
+            artist="SPITZ"
+          />
+        )}
         
         {/* Loading Indicator */}
-        {!isLoaded && !showSplash && !showCountdown && (
+        {!isLoaded && !showSplash && !showCountdown && !showEnding && (
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
             <div className="flex flex-col items-center gap-4">
               <div className="relative w-12 h-12">
@@ -149,8 +207,8 @@ const App: React.FC = () => {
           </div>
         )}
         
-        {/* Keyboard Shortcuts Hint - Hide when controls are hidden */}
-        {!showSplash && !showCountdown && showKeyboardHint && areControlsVisible && (
+        {/* Keyboard Shortcuts Hint - Hide when controls are hidden or ending is showing */}
+        {!showSplash && !showCountdown && !showEnding && showKeyboardHint && areControlsVisible && (
           <motion.div
             className="fixed bottom-24 left-1/2 -translate-x-1/2 z-20 opacity-0 hover:opacity-100 transition-opacity duration-500"
             initial={{ opacity: 0, y: 20 }}
@@ -174,7 +232,7 @@ const App: React.FC = () => {
         )}
         
         {/* Constructivist Corner Decorations */}
-        {!showSplash && (
+        {!showSplash && !showEnding && (
           <div className="fixed inset-0 pointer-events-none z-5">
             <div className="absolute top-8 left-8 w-16 h-16 border-t-2 border-l-2 border-primary/5" />
             <div className="absolute top-8 right-8 w-16 h-16 border-t-2 border-r-2 border-primary/5" />
@@ -184,7 +242,7 @@ const App: React.FC = () => {
         )}
         
         {/* Subtle Diagonal Accent Lines */}
-        {!showSplash && !showCountdown && (
+        {!showSplash && !showCountdown && !showEnding && (
           <div className="fixed inset-0 pointer-events-none z-5">
             <motion.div
               className="absolute top-0 right-[20%] w-px h-32 bg-primary/5 origin-top-right -rotate-45"

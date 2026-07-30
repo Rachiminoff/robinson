@@ -1,15 +1,13 @@
-// src/data/lyrics.ts
-
 import { LyricLine } from '../types';
 
-// Offset all times by 12 seconds (since music starts at 12s)
+// Offset all times by 6 seconds (since music starts at 6s)
 const OFFSET = 6;
 
 export const lyricsData: LyricLine[] = [
   {
     start: 0 + OFFSET,
     end: 35.2 + OFFSET,
-    japanese: '（Instrumental）',
+    japanese: 'インスト',
     english: 'Instrumental',
   },
   {
@@ -194,7 +192,7 @@ export const lyricsData: LyricLine[] = [
   {
     start: 191.5 + OFFSET,
     end: 195.2 + OFFSET,
-    japanese: '誰も触れられない！',
+    japanese: '誰も触れられない',
     english: 'A country just for the two of us',
     backgroundWord: '誰も触れられない'
   },
