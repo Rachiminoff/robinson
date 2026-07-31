@@ -62,7 +62,7 @@ export const lyricsData: LyricLine[] = [
     start: 70.1 + OFFSET,
     end: 74.9 + OFFSET,
     japanese: '同じセリフ 同じ時',
-    english: 'The same lines, the same',
+    english: 'The same lines, the same timing—',
   },
   {
     start: 74.9 + OFFSET,
@@ -111,10 +111,16 @@ export const lyricsData: LyricLine[] = [
   },
   {
     start: 112.8 + OFFSET,
-    end: 139.4 + OFFSET,
+    end: 121.4 + OFFSET,
     japanese: 'ルララ宇宙の風に乗る',
     english: 'lulala, we\'ll ride the winds of the universe',
     backgroundWord: 'ルララ'
+  },
+  {
+    start: 121.5 + OFFSET,
+    end: 139.3 + OFFSET,
+    japanese: 'インスト',
+    english: 'Instrumental',
   },
   {
     start: 139.4 + OFFSET,
@@ -238,7 +244,7 @@ export const lyricsData: LyricLine[] = [
   },
   {
     start: 242.6 + OFFSET,
-    end: 250.6 + OFFSET,
+    end: 252.3 + OFFSET,
     japanese: 'ルララ宇宙の風に乗る',
     english: 'lulala, we\'ll ride the winds of the universe',
     backgroundWord: 'ルララ'
