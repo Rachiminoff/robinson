@@ -233,7 +233,6 @@ const EndingScreen: React.FC<EndingScreenProps> = ({
               {songTitle}
             </span>
             <span className="w-px h-2 bg-secondary/10" />
-            <span>Made with ❤️</span>
           </motion.div>
         </motion.div>
       </motion.div>
