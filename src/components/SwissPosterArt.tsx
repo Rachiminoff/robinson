@@ -390,39 +390,39 @@ const SwissPosterArt: React.FC<SwissPosterArtProps> = ({ family, colors, index, 
 
   const layoutScaffold = [
     // Edge-heavy left field
-    <square key="layout-left" style={{ left: '-5%', top: '8%', width: '30%', height: '84%', opacity: .72 }} color={p} />,
+    square({ left: '-5%', top: '8%', width: '30%', height: '84%' }, 'layout-left', p, .72),
     // Offset right field
-    <square key="layout-right" style={{ right: '-7%', top: '18%', width: '35%', height: '58%', opacity: .72 }} color={s} />,
+    square({ right: '-7%', top: '18%', width: '35%', height: '58%' }, 'layout-right', s, .72),
     // Top editorial band
-    <square key="layout-top" style={{ left: '0%', top: '-4%', width: '100%', height: '25%', opacity: .55 }} color={p} />,
+    square({ left: '0%', top: '-4%', width: '100%', height: '25%' }, 'layout-top', p, .55),
     // Bottom editorial band
-    <square key="layout-bottom" style={{ left: '0%', bottom: '-5%', width: '100%', height: '28%', opacity: .55 }} color={s} />,
+    square({ left: '0%', bottom: '-5%', width: '100%', height: '28%' }, 'layout-bottom', s, .55),
     // Split-axis structure
     <>
       {rule({ left: '11%', top: '7%', width: '2px', height: '86%', opacity: .65 }, 'layout-axis-v', ink)}
       {rule({ left: '8%', top: '74%', width: '84%', height: '2px', opacity: .65 }, 'layout-axis-h', ink)}
     </>,
     // Corner crop / diagonal field
-    <square key="layout-crop" style={{ left: '-18%', top: '46%', width: '72%', height: '42%', transform: 'rotate(-8deg)', opacity: .6 }} color={a} />,
+    square({ left: '-18%', top: '46%', width: '72%', height: '42%', transform: 'rotate(-8deg)' }, 'layout-crop', a, .6),
     // Counterweight corner
-    <square key="layout-counter" style={{ right: '-4%', top: '-6%', width: '43%', height: '38%', transform: 'rotate(5deg)', opacity: .62 }} color={p} />,
+    square({ right: '-4%', top: '-6%', width: '43%', height: '38%', transform: 'rotate(5deg)' }, 'layout-counter', p, .62),
     // Vertical spine
-    <square key="layout-spine" style={{ left: '42%', top: '-4%', width: '16%', height: '108%', opacity: .38 }} color={colors.background} />,
+    square({ left: '42%', top: '-4%', width: '16%', height: '108%' }, 'layout-spine', colors.background, .38),
     // Horizontal spine
-    <square key="layout-spine-h" style={{ left: '-4%', top: '42%', width: '108%', height: '17%', opacity: .38 }} color={colors.background} />,
+    square({ left: '-4%', top: '42%', width: '108%', height: '17%' }, 'layout-spine-h', colors.background, .38),
     // Offset window
-    <frame key="layout-window" style={{ left: '14%', top: '11%', width: '66%', height: '72%', borderWidth: '3px', opacity: .72 }} color={ink} />,
+    frame({ left: '14%', top: '11%', width: '66%', height: '72%', borderWidth: '3px', opacity: .72 }, 'layout-window', ink),
     // Cropped circular counterform
-    <circle key="layout-orbit" style={{ left: '-14vw', bottom: '-11vw', width: '42vw', height: '42vw', opacity: .68 }} color={a} />,
+    circle({ left: '-14vw', bottom: '-11vw', width: '42vw', height: '42vw' }, 'layout-orbit', a, .68),
     // Narrow asymmetric rail
     <>
       {rule({ left: '6%', top: '12%', width: '72%', height: 5, opacity: .65 }, 'layout-rail-1', p)}
       {rule({ left: '19%', top: '19%', width: '42%', height: 2, opacity: .55 }, 'layout-rail-2', ink)}
     </>,
     // Full-bleed offset field
-    <square key="layout-field" style={{ left: '-3%', top: '15%', width: '106%', height: '54%', transform: 'skewX(-5deg)', opacity: .42 }} color={p} />,
+    square({ left: '-3%', top: '15%', width: '106%', height: '54%', transform: 'skewX(-5deg)' }, 'layout-field', p, .42),
     // Asymmetric bottom-right block
-    <square key="layout-block" style={{ right: '7%', bottom: '8%', width: '31%', height: '31%', transform: 'rotate(-4deg)', opacity: .65 }} color={a} />,
+    square({ right: '7%', bottom: '8%', width: '31%', height: '31%', transform: 'rotate(-4deg)' }, 'layout-block', a, .65),
   ][layoutMode];
 
   return (
