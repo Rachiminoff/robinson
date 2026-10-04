@@ -397,3 +397,59 @@
   }
 }
 
+
+/* Generative poster layer: restrained movement keeps the Swiss grid intact while
+   allowing each lyric loop to arrive as a slightly different composition. */
+.loop-composition {
+  transform: translateX(var(--loop-shift, 0vw)) rotate(var(--loop-tilt, 0deg));
+  transform-origin: center center;
+}
+
+.loop-composition::before,
+.loop-composition::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.loop-composition::before {
+  inset: -8vh -4vw;
+  border-top: 1px solid rgba(17,17,17,0.12);
+  border-bottom: 1px solid rgba(17,17,17,0.08);
+  transform: translateY(calc(var(--loop-shift, 0vw) * 0.5));
+}
+
+.loop-composition::after {
+  width: 18vw;
+  height: 18vw;
+  max-width: 240px;
+  max-height: 240px;
+  right: -7vw;
+  top: 50%;
+  border: 2px solid currentColor;
+  opacity: 0.08;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loop-composition { transform: none; }
+}
+
+
+/* Generative Bauhaus × Swiss visual families */
+.visual-family { color: var(--visual-ink, #111111); }
+.visual-family-content { isolation: isolate; }
+.visual-family-swiss-grid,
+.visual-family-kinetic-rules,
+.visual-family-vertical-editorial { mix-blend-mode: multiply; }
+.visual-family-bauhaus-orbit,
+.visual-family-modular-blocks { mix-blend-mode: multiply; }
+.visual-family-negative-space { opacity: .8; }
+.visual-content-cropped-poster { letter-spacing: -0.025em; }
+.visual-content-typographic-monument { transform-origin: 50% 50%; }
+.visual-content-vertical-editorial { padding-left: clamp(1rem, 4vw, 4rem); padding-right: clamp(1rem, 4vw, 4rem); }
+.visual-content-negative-space { transform: translate(var(--loop-shift), 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .visual-family * { animation: none !important; }
+}

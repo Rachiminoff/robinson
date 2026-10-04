@@ -1,23 +1,43 @@
 import { Composition, CompositionDNA, LayoutPreset, GeometryPreset, TypographyPreset, MotionPreset, Layer, CompositionContext, Shape, GeometryConfig } from '../types/composition';
 import { LyricLine } from '../types';
 
-// Extended color palettes
+// Bauhaus × Swiss editorial palettes.
+// The system intentionally favors paper, ink, red, blue, and yellow so
+// each loop feels like a new poster from the same visual language.
 const colorPalettes = [
-  { primary: '#E94560', secondary: '#3498DB', accent: '#F1C40F', background: '#111111', text: '#F5F5F5' },
-  { primary: '#FF6B6B', secondary: '#4ECDC4', accent: '#FFE66D', background: '#111111', text: '#F5F5F5' },
-  { primary: '#A8E6CF', secondary: '#FF8B94', accent: '#FFD93D', background: '#111111', text: '#F5F5F5' },
-  { primary: '#6C5CE7', secondary: '#00CEC9', accent: '#FDCB6E', background: '#111111', text: '#F5F5F5' },
-  { primary: '#FD79A8', secondary: '#00B894', accent: '#FDCB6E', background: '#111111', text: '#F5F5F5' },
-  { primary: '#00B894', secondary: '#E17055', accent: '#FDCB6E', background: '#111111', text: '#F5F5F5' },
-  { primary: '#0984E3', secondary: '#FDCB6E', accent: '#E17055', background: '#111111', text: '#F5F5F5' },
-  { primary: '#E17055', secondary: '#00CEC9', accent: '#FDCB6E', background: '#111111', text: '#F5F5F5' },
-  { primary: '#A29BFE', secondary: '#FD79A8', accent: '#FDCB6E', background: '#111111', text: '#F5F5F5' },
-  { primary: '#55EFC4', secondary: '#FD79A8', accent: '#FDCB6E', background: '#111111', text: '#F5F5F5' },
-  { primary: '#FDCB6E', secondary: '#E17055', accent: '#00CEC9', background: '#111111', text: '#F5F5F5' },
-  { primary: '#FF9FF3', secondary: '#54A0FF', accent: '#FFDA79', background: '#111111', text: '#F5F5F5' },
-  { primary: '#FF6348', secondary: '#7BED9F', accent: '#FFDA79', background: '#111111', text: '#F5F5F5' },
-  { primary: '#70A1FF', secondary: '#FF6B81', accent: '#FFDA79', background: '#111111', text: '#F5F5F5' },
-  { primary: '#FF6B81', secondary: '#70A1FF', accent: '#FFDA79', background: '#111111', text: '#F5F5F5' },
+  // Paper + primary systems
+  { primary: '#E6392F', secondary: '#087E8B', accent: '#F4C430', background: '#F4F0E6', text: '#111111' },
+  { primary: '#0057B8', secondary: '#E6392F', accent: '#F4C430', background: '#F4F0E6', text: '#111111' },
+  { primary: '#111111', secondary: '#E6392F', accent: '#F4C430', background: '#F7F3E8', text: '#111111' },
+  { primary: '#F4C430', secondary: '#111111', accent: '#E6392F', background: '#E9E4D8', text: '#111111' },
+
+  // Vivid editorial fields — inspired by the supplied Swiss poster references
+  { primary: '#111111', secondary: '#FFFFFF', accent: '#FFD400', background: '#E83B2E', text: '#111111' },
+  { primary: '#111111', secondary: '#E83B2E', accent: '#FFFFFF', background: '#00A6B4', text: '#111111' },
+  { primary: '#FFFFFF', secondary: '#111111', accent: '#F4C430', background: '#2457D6', text: '#FFFFFF' },
+  { primary: '#111111', secondary: '#FFFFFF', accent: '#E83B2E', background: '#F4C430', text: '#111111' },
+  { primary: '#FFFFFF', secondary: '#111111', accent: '#00C2B8', background: '#7B4FC7', text: '#FFFFFF' },
+  { primary: '#111111', secondary: '#FFFFFF', accent: '#F4C430', background: '#EF5A9D', text: '#111111' },
+  { primary: '#111111', secondary: '#E83B2E', accent: '#FFFFFF', background: '#78A92E', text: '#111111' },
+  { primary: '#FFFFFF', secondary: '#111111', accent: '#FFD400', background: '#E85D24', text: '#FFFFFF' },
+  { primary: '#111111', secondary: '#FFFFFF', accent: '#E83B2E', background: '#27A7A0', text: '#111111' },
+  { primary: '#FFFFFF', secondary: '#111111', accent: '#F4C430', background: '#E94B35', text: '#FFFFFF' },
+  { primary: '#111111', secondary: '#F4C430', accent: '#FFFFFF', background: '#B7D7E8', text: '#111111' },
+  { primary: '#FFFFFF', secondary: '#111111', accent: '#E83B2E', background: '#5B5B5B', text: '#FFFFFF' },
+
+  // Cooler / quieter Swiss editorial systems
+  { primary: '#E83B2E', secondary: '#0057B8', accent: '#F4C430', background: '#DCEAF5', text: '#111111' },
+  { primary: '#111111', secondary: '#2457D6', accent: '#E83B2E', background: '#D9E8E3', text: '#111111' },
+  { primary: '#E83B2E', secondary: '#111111', accent: '#F4C430', background: '#E8DFF3', text: '#111111' },
+  { primary: '#0057B8', secondary: '#111111', accent: '#E83B2E', background: '#F0D8D1', text: '#111111' },
+  { primary: '#111111', secondary: '#E83B2E', accent: '#0057B8', background: '#DDE3C8', text: '#111111' },
+  { primary: '#F4C430', secondary: '#E83B2E', accent: '#0057B8', background: '#CFE7E8', text: '#111111' },
+
+  // Dark poster systems — used less often, but deliberately different
+  { primary: '#E83B2E', secondary: '#00A6B4', accent: '#F4C430', background: '#151515', text: '#F7F3E8' },
+  { primary: '#F4C430', secondary: '#E83B2E', accent: '#FFFFFF', background: '#202A44', text: '#F7F3E8' },
+  { primary: '#00C2B8', secondary: '#EF5A9D', accent: '#F4C430', background: '#171717', text: '#F7F3E8' },
+  { primary: '#E83B2E', secondary: '#F4C430', accent: '#00A6B4', background: '#353535', text: '#F7F3E8' },
 ];
 
 // All possible layout presets
@@ -60,7 +80,7 @@ const seededRandom = (seed: number): number => {
 };
 
 // Get random item from array using seed - FIXED with safe index
-const randomItem = <T,>(arr: T[], seed: number): T => {
+const randomItem = <T,>(arr: readonly T[], seed: number): T => {
   if (!arr || arr.length === 0) return arr as any;
   const safeSeed = Math.abs(seed);
   const index = Math.floor(seededRandom(safeSeed) * arr.length);
@@ -285,7 +305,7 @@ export class CompositionEngine {
       const colorOptions = [colorPalette.primary, colorPalette.secondary, colorPalette.accent];
       
       const shapeTypes: ('circle' | 'rectangle' | 'triangle' | 'line')[] = ['circle', 'rectangle', 'triangle', 'line'];
-      const numShapes = 4 + Math.floor(seededRandom(seed + 1000) * 4);
+      const numShapes = 3 + Math.floor(composition.dna.density * 6);
       
       for (let i = 0; i < numShapes; i++) {
         const s = seed + i * 100 + 2000;
@@ -296,11 +316,11 @@ export class CompositionEngine {
           type: type as any,
           x: randomBetween(Math.abs(s + 20), 5, 95),
           y: randomBetween(Math.abs(s + 30), 5, 95),
-          width: randomBetween(Math.abs(s + 40), 60, 350),
-          height: randomBetween(Math.abs(s + 50), 60, 350),
-          rotation: randomBetween(Math.abs(s + 60), -45, 45),
+          width: randomBetween(Math.abs(s + 40), 40, 300) * composition.dna.geometryScale,
+          height: randomBetween(Math.abs(s + 50), 40, 300) * composition.dna.geometryScale,
+          rotation: randomBetween(Math.abs(s + 60), -35, 35),
           color: color,
-          opacity: randomBetween(Math.abs(s + 70), 0.15, 0.4),
+          opacity: randomBetween(Math.abs(s + 70), 0.08, 0.28) * composition.dna.backgroundIntensity,
         });
       }
       

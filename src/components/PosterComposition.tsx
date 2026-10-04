@@ -5,6 +5,8 @@ import InteractiveBackground from './InteractiveBackground';
 import { CompositionEngine } from '../engine/CompositionEngine';
 import { GeometryConfig } from '../types/composition';
 import { useSettings } from '../context/SettingsContext';
+import { seededRandom, randomItem } from '../utils/seededRandom';
+import SwissPosterArt from './SwissPosterArt';
 
 interface PosterCompositionProps {
   currentTime: number;
@@ -45,6 +47,31 @@ type AnimationStyle =
 
 // Mood types
 type MoodType = 'minimal' | 'dramatic' | 'elegant' | 'bold' | 'delicate' | 'balanced';
+type VisualFamily =
+  | 'swiss-grid'
+  | 'bauhaus-orbit'
+  | 'typographic-monument'
+  | 'cropped-poster'
+  | 'modular-blocks'
+  | 'kinetic-rules'
+  | 'vertical-editorial'
+  | 'negative-space';
+
+interface LyricProfile {
+  japaneseLength: number;
+  englishLength: number;
+  englishWords: number;
+  duration: number;
+  density: number;
+  intensity: number;
+  repetition: number;
+  hasPunctuation: boolean;
+  hasQuestion: boolean;
+  isShort: boolean;
+  isLong: boolean;
+  isQuiet: boolean;
+  isDramatic: boolean;
+}
 
 interface CompositionConfig {
   pattern: CompositionPattern;
@@ -52,6 +79,9 @@ interface CompositionConfig {
   mood: MoodType;
   emphasis: 'japanese' | 'english' | 'balanced';
   layout: string;
+  family: VisualFamily;
+  variant: number;
+  profile: LyricProfile;
   metadata: {
     position: string;
     opacity: number;
@@ -66,7 +96,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   const { settings, getFontFamily, getFontWeight } = useSettings();
   const [isMobile, setIsMobile] = useState(false);
   const [previousIndex, setPreviousIndex] = useState<number>(-1);
-  const [isInGap, setIsInGap] = useState<boolean>(false);
+
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -80,44 +110,25 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
 
   // Find current lyric - memoized with gap detection
   const currentLyric = useMemo(() => {
-    // Define gap threshold (in seconds) - gaps longer than this will show nothing
     const GAP_THRESHOLD = 0.15;
-    
     for (let i = 0; i < lyricsData.length; i++) {
       const lyric = lyricsData[i];
       const next = lyricsData[i + 1];
-      
-      // Check if current time is within this lyric's range
-      if (currentTime >= lyric.start && currentTime < lyric.end) {
-        setIsInGap(false);
-        return { lyric, index: i };
-      }
-      
-      // Check if we're in a gap between lyrics
+      if (currentTime >= lyric.start && currentTime < lyric.end) return { lyric, index: i };
       if (next && currentTime >= lyric.end && currentTime < next.start) {
-        const gapDuration = next.start - lyric.end;
-        // If gap is longer than threshold, show nothing (true gap)
-        // If gap is very small, keep showing the previous lyric (for natural transitions)
-        if (gapDuration > GAP_THRESHOLD) {
-          setIsInGap(true);
-          return null;
-        } else {
-          // Small gap - keep showing the previous lyric
-          setIsInGap(false);
-          return { lyric, index: i };
-        }
+        return next.start - lyric.end <= GAP_THRESHOLD ? { lyric, index: i } : null;
       }
     }
-    
-    // Check if we're past the last lyric
-    const lastLyric = lyricsData[lyricsData.length - 1];
-    if (lastLyric && currentTime >= lastLyric.end) {
-      setIsInGap(true);
-      return null;
-    }
-    
     return null;
   }, [currentTime]);
+
+  const isInGap = useMemo(() => {
+    if (currentLyric) return false;
+    const first = lyricsData[0];
+    const last = lyricsData[lyricsData.length - 1];
+    if (!first || !last) return false;
+    return currentTime >= first.start && currentTime < last.end;
+  }, [currentTime, currentLyric]);
 
   // Track index changes for animation decisions
   useEffect(() => {
@@ -126,74 +137,150 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     }
   }, [currentLyric, previousIndex]);
 
-  // Generate composition configuration based on lyric index
+  // Generate a seeded visual system for this loop.
+  // Desktop and mobile deliberately use different visual vocabularies and seed
+  // spaces, so the same lyric becomes a different poster on each device.
   const compositionConfig = useMemo((): CompositionConfig | null => {
     if (!currentLyric) return null;
-    
-    const { index } = currentLyric;
-    
-    // Cycle through patterns to ensure variety
-    const patterns: CompositionPattern[] = [
-      'oversized-japanese',
-      'japanese-left-english-right',
-      'vertical-japanese-horizontal-english',
-      'overlapping-english',
-      'cropped-japanese',
-      'japanese-fill-english-notes',
-      'opposite-corners',
-      'geometric-placement',
-      'rule-based',
-      'wrapped-around-shapes'
-    ];
-    
-    const patternIndex = index % patterns.length;
-    const pattern = patterns[patternIndex];
-    
-    // Determine animation style (avoid repeating same animation)
-    const animations: AnimationStyle[] = [
-      'character-reveal',
-      'word-stagger',
-      'vertical-wipe',
-      'horizontal-mask',
-      'clip-path',
-      'blur-to-focus',
-      'tracking-expand',
-      'oversized-scale',
-      'slide-grid',
-      'cropped-reveal',
-      'editorial-rotation',
-      'word-assembly',
-      'geometry-emerge',
-      'rectangle-reveal',
-      'background-fade'
-    ];
-    
-    const animIndex = (index * 2 + Math.floor(index / 3)) % animations.length;
-    const animation = animations[animIndex];
-    
-    // Determine mood based on lyric position and content
-    const moods: MoodType[] = ['minimal', 'dramatic', 'elegant', 'bold', 'delicate', 'balanced'];
-    const moodIndex = (index + Math.floor(index / 2)) % moods.length;
-    const mood = moods[moodIndex];
-    
-    // Determine emphasis
-    let emphasis: 'japanese' | 'english' | 'balanced' = 'japanese';
-    if (index % 5 === 2) emphasis = 'english';
-    else if (index % 5 === 4) emphasis = 'balanced';
-    
-    // Layout variations
-    const layouts = ['split', 'diagonal', 'grid', 'frame', 'minimal', 'vertical', 'dense'];
-    const layout = layouts[index % layouts.length];
-    
-    // Metadata positions
-    const positions = ['bottom-left', 'bottom-right', 'top-left', 'top-right', 'corner'];
-    const metadata = {
-      position: positions[index % positions.length],
-      opacity: 0.3 + (index % 3) * 0.1,
+    const { lyric, index } = currentLyric;
+    const duration = Math.max(0.25, lyric.end - lyric.start);
+    const japaneseLength = lyric.japanese.trim().length;
+    const englishLength = (lyric.english || '').trim().length;
+    const englishWords = (lyric.english || '').trim().split(/\s+/).filter(Boolean).length;
+
+    // The lyric itself becomes part of the art direction. We deliberately use
+    // semantic buckets rather than pure randomness so a quiet/short line can
+    // produce a different kind of poster than a dense/dramatic line.
+    const compact = lyric.japanese.replace(/\s/g, '');
+    const counts = new Map<string, number>();
+    for (const char of compact) counts.set(char, (counts.get(char) || 0) + 1);
+    const repeatedCharacters = Array.from(counts.values()).filter(n => n > 1).reduce((sum, n) => sum + n - 1, 0);
+    const repetition = compact.length ? repeatedCharacters / compact.length : 0;
+    const hasQuestion = /[？?]/.test(`${lyric.japanese}${lyric.english || ''}`);
+    const hasPunctuation = /[、。！？!?…—–,.:;]/.test(`${lyric.japanese}${lyric.english || ''}`);
+    const density = Math.min(1, japaneseLength / 18 + englishWords / 18);
+    const intensity = Math.min(1, 0.35 + (1 / duration) * 0.32 + (hasPunctuation ? 0.12 : 0) + (hasQuestion ? 0.1 : 0));
+    const profile: LyricProfile = {
+      japaneseLength,
+      englishLength,
+      englishWords,
+      duration,
+      density,
+      intensity,
+      repetition,
+      hasPunctuation,
+      hasQuestion,
+      isShort: japaneseLength <= 6,
+      isLong: japaneseLength >= 15 || englishWords >= 10,
+      isQuiet: duration >= 4.5 && intensity < 0.58,
+      isDramatic: intensity > 0.78 || hasQuestion,
     };
-    
-    return { pattern, animation, mood, emphasis, layout, metadata };
-  }, [currentLyric]);
+
+    const deviceSeedOffset = isMobile ? 100003 : 0;
+    const seed = Math.floor(lyric.start * 1000) + index * 7919 + deviceSeedOffset;
+
+    const desktopFamilies: VisualFamily[] = [
+      'swiss-grid', 'bauhaus-orbit', 'typographic-monument', 'cropped-poster',
+      'modular-blocks', 'kinetic-rules', 'vertical-editorial', 'negative-space',
+    ];
+    const mobileFamilies: VisualFamily[] = [
+      'cropped-poster', 'modular-blocks', 'vertical-editorial', 'negative-space',
+      'kinetic-rules', 'swiss-grid', 'bauhaus-orbit', 'typographic-monument',
+    ];
+
+    // Keep the FULL visual vocabulary available. Lyric semantics should bias
+    // the art direction, not collapse it into a tiny set of families. This is
+    // important for the generative feel: two quiet lines can still become very
+    // different posters.
+    const baseFamilies = isMobile ? mobileFamilies : desktopFamilies;
+    const preferredFamilies: VisualFamily[] = profile.isQuiet
+      ? ['negative-space', 'swiss-grid', 'vertical-editorial', 'typographic-monument']
+      : profile.isDramatic
+        ? ['cropped-poster', 'bauhaus-orbit', 'kinetic-rules', 'typographic-monument']
+        : profile.isLong
+          ? ['swiss-grid', 'modular-blocks', 'vertical-editorial', 'cropped-poster']
+          : profile.repetition > 0.2
+            ? ['modular-blocks', 'typographic-monument', 'kinetic-rules', 'swiss-grid']
+            : ['swiss-grid', 'bauhaus-orbit', 'cropped-poster', 'modular-blocks'];
+
+    // Weighted candidate list: preferred families appear twice, but every
+    // family remains available. This gives semantic direction without making
+    // consecutive loops feel like they belong to the same small template set.
+    const families: VisualFamily[] = [
+      ...baseFamilies,
+      ...preferredFamilies,
+      ...preferredFamilies,
+    ];
+
+    const desktopPatterns: CompositionPattern[] = [
+      'oversized-japanese', 'japanese-left-english-right', 'vertical-japanese-horizontal-english',
+      'overlapping-english', 'cropped-japanese', 'japanese-fill-english-notes', 'opposite-corners',
+      'geometric-placement', 'rule-based', 'wrapped-around-shapes',
+    ];
+    const mobilePatterns: CompositionPattern[] = [
+      'oversized-japanese', 'japanese-fill-english-notes', 'vertical-japanese-horizontal-english',
+      'opposite-corners', 'rule-based', 'geometric-placement', 'overlapping-english',
+    ];
+    const desktopAnimations: AnimationStyle[] = [
+      'character-reveal', 'word-stagger', 'vertical-wipe', 'horizontal-mask', 'clip-path',
+      'blur-to-focus', 'tracking-expand', 'oversized-scale', 'slide-grid', 'cropped-reveal',
+      'editorial-rotation', 'word-assembly', 'geometry-emerge', 'rectangle-reveal',
+    ];
+    const mobileAnimations: AnimationStyle[] = [
+      'vertical-wipe', 'horizontal-mask', 'cropped-reveal', 'word-stagger', 'rectangle-reveal',
+      'tracking-expand', 'slide-grid', 'editorial-rotation',
+    ];
+    const moods: MoodType[] = ['minimal', 'dramatic', 'elegant', 'bold', 'delicate', 'balanced'];
+    const desktopLayouts = ['split', 'diagonal', 'grid', 'frame', 'minimal', 'vertical', 'dense', 'poster', 'editorial'];
+    const mobileLayouts = ['stack', 'crop', 'column', 'frame', 'poster', 'split', 'vertical', 'tile'];
+    const positions = ['bottom-left', 'bottom-right', 'top-left', 'top-right', 'corner'];
+
+    const patterns = isMobile ? mobilePatterns : desktopPatterns;
+    const animations = isMobile ? mobileAnimations : desktopAnimations;
+    const layouts = isMobile ? mobileLayouts : desktopLayouts;
+
+    const family = randomItem(families, seed + 101);
+    const patternBias = profile.isShort ? 17 : profile.isLong ? 53 : profile.isDramatic ? 31 : profile.repetition > 0.2 ? 67 : 43;
+    const pattern = randomItem(patterns, seed + patternBias);
+    const animation = randomItem(animations, seed + 11 + Math.round(profile.intensity * 19));
+    const mood = profile.isQuiet ? 'minimal' : profile.isDramatic ? 'dramatic' : randomItem(moods, seed + 21);
+    const layout = randomItem(layouts, seed + 31 + Math.round(profile.density * 17));
+    const emphasis = profile.isLong || profile.isDramatic
+      ? 'japanese'
+      : randomItem(['japanese', 'japanese', 'balanced', 'english'] as const, seed + 41);
+
+    // All 28 compositions stay in the pool. Semantic preferences are soft
+    // weights rather than hard filters, so the generator can still surprise.
+    const allVariants = Array.from({ length: 28 }, (_, i) => i);
+    const preferredVariants = profile.isQuiet
+      ? [3, 6, 9, 13, 16, 20, 23]
+      : profile.isShort
+        ? [2, 5, 8, 18, 19, 24, 26]
+        : profile.isLong
+          ? [1, 4, 7, 10, 12, 21, 25, 27]
+          : profile.isDramatic
+            ? [2, 8, 17, 18, 19, 24, 26, 27]
+            : profile.repetition > 0.2
+              ? [1, 7, 11, 22, 25, 27]
+              : [0, 4, 6, 10, 14, 15, 20, 21, 23, 26];
+    const variantPool = [...allVariants, ...preferredVariants, ...preferredVariants];
+    const variant = randomItem(variantPool, seed + 71 + (isMobile ? 401 : 0));
+
+    return {
+      pattern, animation, mood, emphasis, layout, family, variant, profile,
+      metadata: {
+        position: randomItem(positions, seed + 51),
+        opacity: 0.22 + seededRandom(seed + 61) * 0.28,
+      },
+    };
+  }, [currentLyric, isMobile]);
+
+  // The visual index is intentionally different on mobile. CompositionEngine
+  // uses lyricIndex as part of its deterministic visual generation, so this
+  // makes colors/shapes/layouts different even when the lyric is identical.
+  const visualLyricIndex = currentLyric
+    ? currentLyric.index + (isMobile ? 10000 : 0)
+    : 0;
 
   // Get composition data from engine
   const composition = useMemo(() => {
@@ -202,12 +289,12 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     const { lyric, index } = currentLyric;
     const context = {
       currentTime,
-      lyricIndex: index,
+      lyricIndex: visualLyricIndex,
       totalLyrics: lyricsData.length,
       isPlaying,
       progress: (currentTime - lyric.start) / (lyric.end - lyric.start || 1),
     };
-    return CompositionEngine.generateComposition(lyric, index, lyricsData.length, context);
+    return CompositionEngine.generateComposition(lyric, visualLyricIndex, lyricsData.length, context);
   }, [currentLyric, currentTime, isPlaying, compositionConfig]);
 
   // Get background geometry config
@@ -217,15 +304,15 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     const { lyric, index } = currentLyric;
     const context = {
       currentTime,
-      lyricIndex: index,
+      lyricIndex: visualLyricIndex,
       totalLyrics: lyricsData.length,
       isPlaying,
       progress: (currentTime - lyric.start) / (lyric.end - lyric.start || 1),
     };
-    const comp = CompositionEngine.generateComposition(lyric, index, lyricsData.length, context);
+    const comp = CompositionEngine.generateComposition(lyric, visualLyricIndex, lyricsData.length, context);
     
     return {
-      shapes: CompositionEngine.getShapesForLyric(lyric, index, context),
+      shapes: CompositionEngine.getShapesForLyric(lyric, visualLyricIndex, context),
       colors: comp.colors,
     };
   }, [currentLyric, currentTime, isPlaying, compositionConfig]);
@@ -234,7 +321,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   if (!currentLyric || !composition || !bgConfig || !compositionConfig || isInGap) {
     // Show just the background with ambient shapes
     return (
-      <div className="fixed inset-0 z-10 overflow-hidden">
+      <div className={`fixed inset-0 z-10 overflow-hidden ${isMobile ? 'device-mobile' : 'device-desktop'}`}>
         {settings.showBackground && bgConfig && (
           <InteractiveBackground 
             composition={bgConfig}
@@ -253,7 +340,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   }
 
   const { lyric, index } = currentLyric;
-  const { pattern, animation, mood, emphasis, metadata } = compositionConfig;
+  const { pattern, animation, mood, emphasis, metadata, family } = compositionConfig;
   
   // Apply settings to determine what to show
   const shouldShowJapanese = settings.languagePreference === 'japanese' || settings.languagePreference === 'bilingual';
@@ -273,22 +360,12 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
 
   // Get mobile-optimized pattern (with variety)
   const getMobilePattern = (): CompositionPattern => {
-    // Use the same pattern but with mobile-friendly adjustments
-    // Some patterns work better on mobile than others
-    const mobileFriendlyPatterns: CompositionPattern[] = [
-      'oversized-japanese',
-      'vertical-japanese-horizontal-english',
-      'japanese-left-english-right',
-      'opposite-corners',
-      'japanese-fill-english-notes',
-    ];
-    
-    // Cycle through mobile-friendly patterns
-    const mobilePatternIndex = index % mobileFriendlyPatterns.length;
-    return mobileFriendlyPatterns[mobilePatternIndex];
+    // The mobile pattern is selected by the device-specific seeded composition,
+    // not by lyric index alone. This gives mobile its own visual identity while
+    // remaining deterministic across replays.
+    return pattern;
   };
 
-  // Get mobile pattern
   const mobilePattern = isMobile ? getMobilePattern() : pattern;
 
   // Get scale based on pattern and emphasis (mobile optimized)
@@ -312,9 +389,9 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     
     // Desktop sizes
     if (pattern === 'oversized-japanese' || pattern === 'japanese-fill-english-notes') {
-      return 'text-8xl md:text-9xl lg:text-[10rem]';
+      return 'text-5xl md:text-7xl lg:text-8xl';
     }
-    if (pattern === 'cropped-japanese') return 'text-[10rem] md:text-[12rem] lg:text-[16rem]';
+    if (pattern === 'cropped-japanese') return 'text-5xl md:text-7xl lg:text-8xl';
     if (pattern === 'vertical-japanese-horizontal-english') return 'text-6xl md:text-7xl lg:text-8xl';
     if (pattern === 'japanese-left-english-right') return 'text-7xl md:text-8xl lg:text-9xl';
     return 'text-6xl md:text-7xl lg:text-8xl';
@@ -368,6 +445,17 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
 
   const japaneseSize = getJapaneseScale();
   const englishSize = getEnglishScale();
+
+  // The poster can be dramatic, but the lyric itself is never allowed to
+  // become a cropped poster element. Font size responds to lyric length so
+  // short lines can be huge while long lines remain inside the viewport.
+  const japaneseResponsiveSize = isMobile
+    ? `clamp(1.45rem, ${Math.max(4.6, Math.min(10.5, 17 - lyric.japanese.length * 0.42))}vw, 3.4rem)`
+    : `clamp(2.7rem, ${Math.max(4.2, Math.min(9.2, 12.5 - lyric.japanese.length * 0.23))}vw, 9rem)`;
+  const englishLength = Math.max(lyric.english?.length || 0, 1);
+  const englishResponsiveSize = isMobile
+    ? `clamp(.72rem, ${Math.max(2.6, Math.min(4.2, 5.2 - englishLength * 0.045))}vw, 1.15rem)`
+    : `clamp(.78rem, ${Math.max(1.25, Math.min(2.25, 2.8 - englishLength * 0.025))}vw, 2rem)`;
 
   // Get layout classes based on pattern (mobile optimized)
   const getPatternLayout = () => {
@@ -428,7 +516,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
             position: 'relative', 
             zIndex: 1,
             maxHeight: '80vh',
-            fontSize: '1.8rem',
+            fontSize: japaneseResponsiveSize,
             lineHeight: 1.4,
           };
         case 'japanese-left-english-right':
@@ -451,7 +539,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
             position: 'relative', 
             zIndex: 1, 
             textAlign: 'center' as const,
-            fontSize: '2.5rem',
+            fontSize: japaneseResponsiveSize,
             lineHeight: 1.2,
             maxWidth: '100%',
             wordBreak: 'break-word',
@@ -461,7 +549,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
             position: 'relative', 
             zIndex: 1, 
             textAlign: 'center' as const,
-            fontSize: '2rem',
+            fontSize: japaneseResponsiveSize,
             lineHeight: 1.3,
           };
         default:
@@ -511,7 +599,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
             marginTop: '0.5rem',
             textAlign: 'center' as const,
             maxWidth: '90%',
-            padding: '0.25rem 0.75rem',
+            padding: 0,
           };
         case 'japanese-left-english-right':
           return { 
@@ -519,8 +607,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
             zIndex: 2, 
             marginTop: '0.25rem',
             textAlign: 'left' as const,
-            paddingLeft: '0.5rem',
-            borderLeft: '2px solid rgba(255,255,255,0.1)',
+            paddingLeft: 0,
           };
         case 'opposite-corners':
           return { 
@@ -537,9 +624,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
             marginTop: '0.5rem',
             textAlign: 'center' as const,
             padding: '0.25rem 0.75rem',
-            backgroundColor: 'rgba(0,0,0,0.3)',
-            backdropFilter: 'blur(4px)',
-            borderRadius: '4px',
           };
         case 'japanese-fill-english-notes':
           return { 
@@ -548,9 +632,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
             marginTop: '0.5rem',
             textAlign: 'center' as const,
             padding: '0.25rem 0.75rem',
-            backgroundColor: 'rgba(0,0,0,0.2)',
-            backdropFilter: 'blur(4px)',
-            borderRadius: '4px',
           };
         default:
           return { position: 'relative', zIndex: 2, marginTop: '0.5rem', textAlign: 'center' as const };
@@ -572,7 +653,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
           marginTop: '2rem',
           textAlign: 'center' as const,
           backgroundColor: 'rgba(0,0,0,0.3)',
-          padding: '1rem 2rem',
           backdropFilter: 'blur(8px)',
           borderRadius: '4px',
         };
@@ -582,20 +662,12 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
           zIndex: 2, 
           marginTop: '1rem',
           textAlign: 'center' as const,
-          padding: '0.5rem 1.5rem',
-          backgroundColor: 'rgba(0,0,0,0.2)',
-          backdropFilter: 'blur(4px)',
-          borderRadius: '4px',
         };
       case 'overlapping-english':
         return { 
           position: 'relative' as const, 
           zIndex: 2, 
           marginTop: '1rem',
-          padding: '0.5rem 1.5rem',
-          backgroundColor: 'rgba(0,0,0,0.15)',
-          backdropFilter: 'blur(4px)',
-          borderRadius: '4px',
         };
       case 'geometric-placement':
         return { 
@@ -604,7 +676,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
           right: '15%', 
           zIndex: 2,
           backgroundColor: 'rgba(0,0,0,0.2)',
-          padding: '0.5rem 1.5rem',
           backdropFilter: 'blur(4px)',
           borderRadius: '4px',
         };
@@ -621,10 +692,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
           position: 'relative' as const, 
           zIndex: 2, 
           marginTop: '1rem',
-          padding: '0.5rem 1.5rem',
-          backgroundColor: 'rgba(0,0,0,0.15)',
-          backdropFilter: 'blur(4px)',
-          borderRadius: '4px',
         };
       default:
         return { position: 'relative', zIndex: 2, marginTop: '0.5rem' };
@@ -975,23 +1042,44 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   // Determine if content should breathe (respect settings)
   const shouldBreathe = isPlaying && ['elegant', 'delicate'].includes(mood) && settings.enableBreathing && settings.enableAnimations && !isMobile;
 
-  // Safely get text shadow
-  const getJapaneseTextShadow = () => {
-    if (isMobile) return '0 2px 20px rgba(0,0,0,0.3)';
-    return (japaneseEffects as any).textShadow || 'none';
-  };
-
-  const getEnglishTextShadow = () => {
-    if (isMobile) return '0 1px 10px rgba(0,0,0,0.2)';
-    return (englishEffects as any).textShadow || 'none';
-  };
-
   // English visibility - always ensure it's readable
-  const englishOpacity = emphasis === 'english' ? 0.92 : 0.75;
+  const englishOpacity = emphasis === 'english' ? 1 : 0.94;
+
+  const isDarkBackground = (() => {
+    const hex = composition.colors.background.replace('#', '');
+    if (hex.length !== 6) return false;
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 145;
+  })();
+  const readableInk = isDarkBackground ? '#F7F3E8' : '#111111';
+  // Keep the poster visible behind the lyrics. Readability comes from a restrained
+  // print-style halo/stroke rather than a UI-like text card.
+  const contrastInk = isDarkBackground ? '#111111' : '#F7F3E8';
+  const lyricStroke = isDarkBackground ? 'rgba(17,17,17,0.72)' : 'rgba(247,243,232,0.78)';
+  const lyricShadow = isDarkBackground
+    ? `0 1px 0 ${lyricStroke}, 1px 0 0 ${lyricStroke}, -1px 0 0 ${lyricStroke}, 0 -1px 0 ${lyricStroke}, 0 4px 18px rgba(0,0,0,0.18)`
+    : `0 1px 0 ${lyricStroke}, 1px 0 0 ${lyricStroke}, -1px 0 0 ${lyricStroke}, 0 -1px 0 ${lyricStroke}, 0 4px 18px rgba(255,255,255,0.12)`;
+
+  const familyArt = (
+    <SwissPosterArt
+      family={family}
+      colors={composition.colors}
+      index={index}
+      currentTime={currentTime}
+      variant={compositionConfig.variant}
+      profile={compositionConfig.profile}
+      dna={composition.dna}
+      layout={composition.layout}
+      typography={composition.typography}
+    />
+  );
+
 
   return (
     <div 
-      className="fixed inset-0 z-10 overflow-hidden"
+      className={`fixed inset-0 z-10 overflow-hidden ${isMobile ? 'device-mobile' : 'device-desktop'}`}
     >
       {/* Background - respect showBackground setting */}
       {settings.showBackground && (
@@ -1001,15 +1089,60 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
           currentTime={currentTime}
         />
       )}
+
+      {/* Poster-to-poster transition: keep the old composition visible while the new
+          one enters, so a lyric change feels like a designed editorial transition
+          instead of a hard cut. */}
+      <AnimatePresence initial={false} mode="sync">
+        <motion.div
+          key={`poster-art-${isMobile ? 'mobile' : 'desktop'}-${index}-${compositionConfig.variant}-${composition.colors.background}`}
+          className="absolute inset-0 z-[1] pointer-events-none overflow-hidden"
+          initial={{
+            opacity: 0,
+            scale: compositionConfig.profile.isDramatic ? 1.045 : 1.025,
+            filter: compositionConfig.profile.isQuiet ? 'blur(2px)' : 'blur(5px)',
+            clipPath: [
+              'inset(0 100% 0 0)',
+              'inset(0 0 0 100%)',
+              'inset(100% 0 0 0)',
+              'circle(0% at 50% 50%)',
+              'polygon(0 0, 0 0, 0 100%, 0 100%)',
+              'inset(0 12% 0 0)',
+            ][compositionConfig.variant % 6],
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            filter: 'blur(0px)',
+            clipPath: ['inset(0 0 0 0)','inset(0 0 0 0)','inset(0 0 0 0)','circle(100% at 50% 50%)','polygon(0 0, 100% 0, 100% 100%, 0 100%)','inset(0 0 0 0)'][compositionConfig.variant % 6],
+          }}
+          exit={{
+            opacity: 0,
+            scale: 0.985,
+            filter: 'blur(3px)',
+            x: index % 2 === 0 ? -10 : 10,
+          }}
+          transition={{
+            duration: settings.enableAnimations ? 0.82 : 0.08,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          {familyArt}
+        </motion.div>
+      </AnimatePresence>
       
       {/* Content Layer */}
-      <div className={`absolute inset-0 flex items-center justify-center z-10 ${
-        isMobile ? 'px-3 py-8' : 'px-8 md:px-16'
+      <div className={`absolute inset-0 flex items-center justify-center z-10 safe-lyric-viewport ${
+        isMobile ? 'px-3 py-[max(4.5rem,env(safe-area-inset-top))] pb-[max(5.5rem,env(safe-area-inset-bottom))]' : 'px-6 md:px-12 lg:px-16 py-20'
       }`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={`composition-${index}`}
-            className={`w-full ${isMobile ? 'max-w-full' : 'max-w-7xl'} ${patternLayout} relative`}
+            className={`w-full ${isMobile ? 'max-w-[94vw]' : 'max-w-[86vw]'} max-h-[72vh] overflow-visible ${patternLayout} relative loop-composition visual-family-content visual-content-${family} safe-lyric-content`}
+            style={{
+              ['--loop-tilt' as any]: `${(seededRandom(index * 17 + 3) - 0.5) * 2.4}deg`,
+              ['--loop-shift' as any]: `${(seededRandom(index * 17 + 7) - 0.5) * 1.5}vw`,
+            }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1021,18 +1154,34 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
             {/* Japanese - Primary text */}
             {finalShowJapanese && (
               <motion.div
-                className={`${japaneseSize} ${isMobile && mobilePattern === 'vertical-japanese-horizontal-english' ? 'writing-vertical' : pattern === 'vertical-japanese-horizontal-english' && !isMobile ? 'writing-vertical' : ''} relative`}
+                className={`${japaneseSize} ${pattern === 'vertical-japanese-horizontal-english' && !isMobile ? 'writing-vertical' : ''} relative lyric-primary`}
                 style={{
                   ...japaneseStyle,
                   ...japaneseEffects,
+                  color: readableInk,
+                  fontSize: japaneseResponsiveSize,
                   ...japanesePos,
-                  textShadow: getJapaneseTextShadow(),
-                  ...(isMobile && mobilePattern === 'oversized-japanese' ? { fontSize: '2.5rem' } : {}),
-                  ...(isMobile && mobilePattern === 'vertical-japanese-horizontal-english' ? { 
-                    fontSize: '1.8rem', 
-                    maxHeight: '80vh',
-                    overflow: 'visible',
-                  } : {}),
+                  display: 'block',
+                  width: 'fit-content',
+                  maxWidth: isMobile ? '88vw' : '82vw',
+                  maxHeight: isMobile ? '42vh' : '54vh',
+                  overflow: 'visible',
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'normal',
+                  whiteSpace: 'normal',
+                  textWrap: 'balance',
+                  hyphens: 'none',
+                  lineHeight: isMobile ? 1.08 : 1.02,
+                  padding: 0,
+                  margin: 0,
+                  background: 'transparent',
+                  border: 'none',
+                  boxShadow: 'none',
+                  backdropFilter: 'none',
+                  WebkitTextStroke: isMobile ? '0.018em transparent' : '0.014em transparent',
+                  paintOrder: 'stroke fill',
+                  textShadow: lyricShadow,
+                  
                 }}
                 variants={japaneseVariants}
                 initial="initial"
@@ -1086,18 +1235,33 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
                 style={{
                   ...englishStyle,
                   ...englishEffects,
+                  color: readableInk,
+                  fontSize: englishResponsiveSize,
                   ...englishPos,
+                  display: 'block',
+                  width: 'fit-content',
+                  maxWidth: isMobile ? '88vw' : '70vw',
+                  maxHeight: isMobile ? '20vh' : '18vh',
+                  overflow: 'visible',
+                  overflowWrap: 'anywhere',
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  textWrap: 'balance',
+                  padding: 0,
+                  margin: 0,
+                  background: 'transparent',
+                  border: 'none',
+                  boxShadow: 'none',
+                  backdropFilter: 'none',
                   opacity: englishOpacity * (settings.textOpacity / 100),
-                  textShadow: getEnglishTextShadow(),
+                  WebkitTextStroke: isMobile ? '0.012em transparent' : '0.009em transparent',
+                  paintOrder: 'stroke fill',
+                  textShadow: lyricShadow,
                   position: englishPos.position || 'relative',
                   zIndex: englishPos.zIndex || 2,
                   ...(isMobile && mobilePattern === 'opposite-corners' ? { 
                     alignSelf: 'flex-end',
                     marginTop: '0.5rem',
-                  } : {}),
-                  ...(isMobile && mobilePattern === 'japanese-left-english-right' ? {
-                    paddingLeft: '0.5rem',
-                    borderLeft: '2px solid rgba(255,255,255,0.1)',
                   } : {}),
                 }}
                 variants={englishVariants}
@@ -1205,18 +1369,20 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
         }
         
         @media (max-width: 768px) {
+          .safe-lyric-content {
+            min-height: 0;
+          }
+          .lyric-primary {
+            max-width: 92vw;
+            overflow: visible;
+          }
+          .lyric-primary span {
+            max-width: 100%;
+          }
           .writing-vertical {
             writing-mode: vertical-rl;
             text-orientation: mixed;
-            max-height: 80vh;
-            font-size: 1.8rem;
-            line-height: 1.4;
-          }
-          
-          /* Ensure vertical text doesn't overflow */
-          .writing-vertical span {
-            display: block;
-            padding: 0.1rem 0;
+            max-height: 44vh;
           }
         }
       `}</style>
