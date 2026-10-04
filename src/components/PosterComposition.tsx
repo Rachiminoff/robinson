@@ -143,6 +143,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   const compositionConfig = useMemo((): CompositionConfig | null => {
     if (!currentLyric) return null;
     const { lyric } = currentLyric;
+  const index = currentLyric.index;
     const duration = Math.max(0.25, lyric.end - lyric.start);
     const japaneseLength = lyric.japanese.trim().length;
     const englishLength = (lyric.english || '').trim().length;
