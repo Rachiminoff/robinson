@@ -177,7 +177,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     };
 
     const deviceSeedOffset = isMobile ? 100003 : 0;
-    const seed = Math.floor(lyric.start * 1000) + index * 7919 + deviceSeedOffset;
+    const seed = Math.floor(lyric.start * 1000) + currentLyric.index * 7919 + deviceSeedOffset;
 
     const desktopFamilies: VisualFamily[] = [
       'swiss-grid', 'bauhaus-orbit', 'typographic-monument', 'cropped-poster',
