@@ -130,6 +130,10 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     return currentTime >= first.start && currentTime < last.end;
   }, [currentTime, currentLyric]);
 
+  // Keep the lyric index in component scope because it is used by the
+  // rendered poster, keys, and animation values below the memo blocks.
+  const index = currentLyric?.index ?? 0;
+
   // Track index changes for animation decisions
   useEffect(() => {
     if (currentLyric && currentLyric.index !== previousIndex) {
@@ -143,7 +147,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   const compositionConfig = useMemo((): CompositionConfig | null => {
     if (!currentLyric) return null;
     const { lyric } = currentLyric;
-  const index = currentLyric.index;
     const duration = Math.max(0.25, lyric.end - lyric.start);
     const japaneseLength = lyric.japanese.trim().length;
     const englishLength = (lyric.english || '').trim().length;
