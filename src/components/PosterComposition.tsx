@@ -142,7 +142,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   // spaces, so the same lyric becomes a different poster on each device.
   const compositionConfig = useMemo((): CompositionConfig | null => {
     if (!currentLyric) return null;
-    const { lyric, index } = currentLyric;
+    const { lyric } = currentLyric;
     const duration = Math.max(0.25, lyric.end - lyric.start);
     const japaneseLength = lyric.japanese.trim().length;
     const englishLength = (lyric.english || '').trim().length;
@@ -286,7 +286,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   const composition = useMemo(() => {
     if (!currentLyric || !compositionConfig) return null;
     
-    const { lyric, index } = currentLyric;
+    const { lyric } = currentLyric;
     const context = {
       currentTime,
       lyricIndex: visualLyricIndex,
@@ -295,13 +295,13 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
       progress: (currentTime - lyric.start) / (lyric.end - lyric.start || 1),
     };
     return CompositionEngine.generateComposition(lyric, visualLyricIndex, lyricsData.length, context);
-  }, [currentLyric, currentTime, isPlaying, compositionConfig]);
+  }, [currentLyric, currentTime, isPlaying, compositionConfig, visualLyricIndex]);
 
   // Get background geometry config
   const bgConfig = useMemo((): GeometryConfig | null => {
     if (!currentLyric || !compositionConfig) return null;
     
-    const { lyric, index } = currentLyric;
+    const { lyric } = currentLyric;
     const context = {
       currentTime,
       lyricIndex: visualLyricIndex,
@@ -315,7 +315,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
       shapes: CompositionEngine.getShapesForLyric(lyric, visualLyricIndex, context),
       colors: comp.colors,
     };
-  }, [currentLyric, currentTime, isPlaying, compositionConfig]);
+  }, [currentLyric, currentTime, isPlaying, compositionConfig, visualLyricIndex]);
 
   // If no lyric or in a gap, show a blank/ambient state
   if (!currentLyric || !composition || !bgConfig || !compositionConfig || isInGap) {
@@ -339,7 +339,7 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
     );
   }
 
-  const { lyric, index } = currentLyric;
+  const { lyric } = currentLyric;
   const { pattern, animation, mood, emphasis, metadata, family } = compositionConfig;
   
   // Apply settings to determine what to show
@@ -1056,7 +1056,6 @@ const PosterComposition: React.FC<PosterCompositionProps> = ({
   const readableInk = isDarkBackground ? '#F7F3E8' : '#111111';
   // Keep the poster visible behind the lyrics. Readability comes from a restrained
   // print-style halo/stroke rather than a UI-like text card.
-  const contrastInk = isDarkBackground ? '#111111' : '#F7F3E8';
   const lyricStroke = isDarkBackground ? 'rgba(17,17,17,0.72)' : 'rgba(247,243,232,0.78)';
   const lyricShadow = isDarkBackground
     ? `0 1px 0 ${lyricStroke}, 1px 0 0 ${lyricStroke}, -1px 0 0 ${lyricStroke}, 0 -1px 0 ${lyricStroke}, 0 4px 18px rgba(0,0,0,0.18)`

@@ -42,7 +42,6 @@ const SwissPosterArt: React.FC<SwissPosterArtProps> = ({ family, colors, index, 
   const seed = index * 137 + variant * 17;
   const r1 = seededRandom(seed + 1);
   const r2 = seededRandom(seed + 2);
-  const r3 = seededRandom(seed + 3);
   const angle = -14 + r1 * 28;
   const common = 'absolute pointer-events-none select-none';
   const artDensity = dna?.density ?? profile?.density ?? 0.5;
@@ -98,12 +97,6 @@ const SwissPosterArt: React.FC<SwissPosterArtProps> = ({ family, colors, index, 
 
   // Keep the visual system behind the lyric-safe center band. The artwork can
   // approach the text, but it should never become a noisy texture underneath it.
-  const centerWash = (
-    <div
-      className="absolute left-[8%] right-[8%] top-[30%] bottom-[30%] rounded-[2px]"
-      style={{ background: `${colors.background}CC` }}
-    />
-  );
 
   const variants: React.ReactNode[] = [
     // 0 — Swiss red block / blue counterform
@@ -397,39 +390,39 @@ const SwissPosterArt: React.FC<SwissPosterArtProps> = ({ family, colors, index, 
 
   const layoutScaffold = [
     // Edge-heavy left field
-    square({ left: '-5%', top: '8%', width: '30%', height: '84%', opacity: .72 }, 'layout-left', p),
+    <square key="layout-left" style={{ left: '-5%', top: '8%', width: '30%', height: '84%', opacity: .72 }} color={p} />,
     // Offset right field
-    square({ right: '-7%', top: '18%', width: '35%', height: '58%', opacity: .72 }, 'layout-right', s),
+    <square key="layout-right" style={{ right: '-7%', top: '18%', width: '35%', height: '58%', opacity: .72 }} color={s} />,
     // Top editorial band
-    square({ left: '0%', top: '-4%', width: '100%', height: '25%', opacity: .55 }, 'layout-top', p),
+    <square key="layout-top" style={{ left: '0%', top: '-4%', width: '100%', height: '25%', opacity: .55 }} color={p} />,
     // Bottom editorial band
-    square({ left: '0%', bottom: '-5%', width: '100%', height: '28%', opacity: .55 }, 'layout-bottom', s),
+    <square key="layout-bottom" style={{ left: '0%', bottom: '-5%', width: '100%', height: '28%', opacity: .55 }} color={s} />,
     // Split-axis structure
     <>
       {rule({ left: '11%', top: '7%', width: '2px', height: '86%', opacity: .65 }, 'layout-axis-v', ink)}
       {rule({ left: '8%', top: '74%', width: '84%', height: '2px', opacity: .65 }, 'layout-axis-h', ink)}
     </>,
     // Corner crop / diagonal field
-    square({ left: '-18%', top: '46%', width: '72%', height: '42%', transform: 'rotate(-8deg)', opacity: .6 }, 'layout-crop', a),
+    <square key="layout-crop" style={{ left: '-18%', top: '46%', width: '72%', height: '42%', transform: 'rotate(-8deg)', opacity: .6 }} color={a} />,
     // Counterweight corner
-    square({ right: '-4%', top: '-6%', width: '43%', height: '38%', transform: 'rotate(5deg)', opacity: .62 }, 'layout-counter', p),
+    <square key="layout-counter" style={{ right: '-4%', top: '-6%', width: '43%', height: '38%', transform: 'rotate(5deg)', opacity: .62 }} color={p} />,
     // Vertical spine
-    square({ left: '42%', top: '-4%', width: '16%', height: '108%', opacity: .38 }, 'layout-spine', colors.background),
+    <square key="layout-spine" style={{ left: '42%', top: '-4%', width: '16%', height: '108%', opacity: .38 }} color={colors.background} />,
     // Horizontal spine
-    square({ left: '-4%', top: '42%', width: '108%', height: '17%', opacity: .38 }, 'layout-spine-h', colors.background),
+    <square key="layout-spine-h" style={{ left: '-4%', top: '42%', width: '108%', height: '17%', opacity: .38 }} color={colors.background} />,
     // Offset window
-    frame({ left: '14%', top: '11%', width: '66%', height: '72%', borderWidth: '3px', opacity: .72 }, 'layout-window', ink),
+    <frame key="layout-window" style={{ left: '14%', top: '11%', width: '66%', height: '72%', borderWidth: '3px', opacity: .72 }} color={ink} />,
     // Cropped circular counterform
-    circle({ left: '-14vw', bottom: '-11vw', width: '42vw', height: '42vw', opacity: .68 }, 'layout-orbit', a),
+    <circle key="layout-orbit" style={{ left: '-14vw', bottom: '-11vw', width: '42vw', height: '42vw', opacity: .68 }} color={a} />,
     // Narrow asymmetric rail
     <>
       {rule({ left: '6%', top: '12%', width: '72%', height: 5, opacity: .65 }, 'layout-rail-1', p)}
       {rule({ left: '19%', top: '19%', width: '42%', height: 2, opacity: .55 }, 'layout-rail-2', ink)}
     </>,
     // Full-bleed offset field
-    square({ left: '-3%', top: '15%', width: '106%', height: '54%', transform: 'skewX(-5deg)', opacity: .42 }, 'layout-field', p),
+    <square key="layout-field" style={{ left: '-3%', top: '15%', width: '106%', height: '54%', transform: 'skewX(-5deg)', opacity: .42 }} color={p} />,
     // Asymmetric bottom-right block
-    square({ right: '7%', bottom: '8%', width: '31%', height: '31%', transform: 'rotate(-4deg)', opacity: .65 }, 'layout-block', a),
+    <square key="layout-block" style={{ right: '7%', bottom: '8%', width: '31%', height: '31%', transform: 'rotate(-4deg)', opacity: .65 }} color={a} />,
   ][layoutMode];
 
   return (
