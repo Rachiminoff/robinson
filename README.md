@@ -1,208 +1,273 @@
-<div align="center">
-
 # Robinson
 
-### typography × geometry × music
+### Typography × Geometry × Music
 
-An experimental web experience inspired by **"Robinson" by Spitz (1995)**.
+**Robinson** is an experimental lyric-video web experience inspired by
+the visual language of Swiss International Typographic Style, Bauhaus,
+editorial design, and kinetic typography.
 
-Rather than presenting lyrics as plain subtitles, **Robinson** treats every line as a poster—combining editorial typography, motion, and geometric composition to create a continuously evolving visual narrative.
+Instead of treating lyrics as subtitles placed on top of a background,
+Robinson treats each lyric line as a small visual poster. The text,
+geometric forms, color, spacing, and motion are designed to work
+together as one composition.
 
-[Live Demo](https://robinson-adsh.vercel.app/)
+> The goal is simple: every lyric should feel like a different piece of
+> graphic design while still belonging to the same visual system.
 
-<br>
+------------------------------------------------------------------------
 
-[![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel&logoColor=white)](https://robinson-poster.vercel.app/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Framer Motion](https://img.shields.io/badge/Framer_Motion-Latest-0055FF?logo=framer&logoColor=white)](https://www.framer.com/motion/)
-[![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+## What Robinson Does
 
-</div>
+Robinson plays a song while displaying synchronized Japanese and English
+lyrics.
 
----
+As the song progresses, the application:
 
-## Overview
+1.  Determines which lyric is currently active.
+2.  Reads basic information about that lyric, such as its length, word
+    count, repetition, punctuation, and timing.
+3.  Uses that information to influence the visual direction.
+4.  Generates a deterministic visual composition for the lyric.
+5.  Selects colors, geometric structures, layout variations, and
+    typography treatment.
+6.  Animates the composition into view.
+7.  Keeps the result readable on the current device.
 
-Most lyric videos rely on backgrounds, illustrations, or footage.
+The result is a lyric video that behaves more like a sequence of
+animated posters than a traditional subtitle player.
 
-**Robinson** explores a different question:
+------------------------------------------------------------------------
 
-> **Can typography alone communicate emotion?**
+## Main Features
 
-The project uses nothing but text, motion, spacing, and geometric forms to transform every lyric into an editorial composition inspired by Swiss graphic design, modern motion graphics, and minimalist interfaces.
+### Generative Poster Composition
 
-No images. No illustrations. Just typography.
+The visual system can select from multiple visual families, geometric
+variants, layout structures, and color combinations.
 
----
+The important idea is that variety is not produced only by changing
+colors. The position, scale, hierarchy, cropping, and relationship
+between shapes also change.
 
-## Features
+### Swiss / Bauhaus-Inspired Art Direction
 
-### Editorial Composition
+The visual language uses ideas such as:
 
-Every lyric is rendered using one of **10 handcrafted layout systems** rather than a single repeating template.
+-   strong grids
+-   asymmetric alignment
+-   large typography
+-   geometric forms
+-   cropped shapes
+-   editorial spacing
+-   primary and secondary color fields
+-   negative space
+-   registration-style details
+-   visual tension between large and small elements
 
-- Dynamic text positioning
-- Oversized Japanese typography
-- Split-screen layouts
-- Vertical compositions
-- Editorial-inspired geometric placement
+The design is inspired by these traditions rather than attempting to
+reproduce one historical poster exactly.
 
-Each screen is designed to feel like an individual poster.
+### Lyric-Aware Visuals
 
----
+Lyrics are not treated as identical pieces of text.
 
-### Motion Design
+The system can consider properties such as:
 
-Instead of one generic transition, lyrics use a library of **15 animation styles**.
+-   Japanese character count
+-   English text length
+-   word count
+-   duration
+-   text density
+-   repetition
+-   punctuation
+-   question marks
+-   short or long lines
+-   quiet or dramatic sections
 
-Animations include:
+These properties help guide the choice of visual direction.
 
-- Character reveal
-- Word stagger
-- Blur to focus
-- Vertical wipe
-- Scale and fade
-- Editorial slide
-- Mood-based transitions
+### Desktop and Mobile Compositions
 
-Motion adapts to the emotional tone of each lyric while remaining synchronized with playback.
+Desktop and mobile use different composition seeds and visual choices.
 
----
+This is intentional. Mobile is not simply a smaller desktop poster. The
+system gives each device class its own visual variation so that the
+composition can be designed for the available screen space.
 
-### Fully Customizable Reading Experience
+### Deterministic Randomness
 
-The interface is designed to be configurable without interrupting playback.
+Robinson uses seeded randomness.
 
-**Languages**
+In simple terms, this means the application can make something look
+random while still producing the same result from the same seed.
 
-- Japanese
-- English
-- Bilingual
+This is useful because:
 
-**Typography**
+-   the same lyric can reproduce its composition
+-   visual changes do not become completely unpredictable
+-   different lyrics can receive different compositions
+-   desktop and mobile can have different results
+-   debugging is easier
 
-- 16 Google Fonts
-- Weight selection
-- Size controls
+------------------------------------------------------------------------
 
-**Animation**
+## User Experience
 
-- Playback speed
-- Motion toggle
-- Breathing effects
+### Playback
 
-**Visuals**
+The application synchronizes visual changes with the song timeline.
 
-- Metadata visibility
-- Glow effects
-- Background elements
-- Particle system
+The active lyric changes as playback moves through the lyric data.
 
-All preferences persist automatically using **localStorage**.
+### Controls
 
----
+The project includes playback, view, fullscreen, metadata, settings, and
+navigation controls.
 
-### Interactive Controls
+Keyboard and touch interaction are supported where appropriate for the
+device.
 
-Keyboard shortcuts make the experience feel closer to a media player.
+### Settings
 
-| Shortcut | Action |
-|----------|--------|
-| Space | Play / Pause |
-| ← → | Previous / Next lyric |
-| V | View mode |
-| F | Fullscreen |
-| H | Toggle metadata |
-| Ctrl/Cmd + , | Settings |
+The application includes options for the reading and visual experience,
+including language, typography, animation, and visual preferences.
 
-Desktop controls automatically hide during playback, while mobile uses touch gestures.
+User preferences can be stored locally so that the experience can
+remember settings between sessions.
 
----
+------------------------------------------------------------------------
 
-### Dynamic Background
+## Technology
 
-The background responds subtly without distracting from the typography.
+  Technology      Purpose
+  --------------- -----------------------------------------
+  React           User interface and component system
+  TypeScript      Typed application code
+  Framer Motion   Animation and transitions
+  Tailwind CSS    Utility-based styling
+  Vite            Development server and production build
+  Lucide React    Interface icons
+  Vercel          Deployment
 
-Features include:
+------------------------------------------------------------------------
 
-- Mouse parallax
-- Animated geometric forms
-- Music-reactive particles
-- Smooth color transitions
-- Ambient breathing effects
+## Important Files
 
----
-
-### Responsive Design
-
-Designed for both desktop and mobile.
-
-- Responsive layouts
-- Adaptive typography
-- Touch-friendly controls
-- Mobile gesture support
-
----
-
-## Tech Stack
-
-| Technology | Purpose |
-|------------|---------|
-| React 19 | Application framework |
-| TypeScript 5 | Type safety |
-| Tailwind CSS 4 | Styling |
-| Framer Motion | Animation engine |
-| Vite 7 | Development & bundling |
-| Lucide React | Icons |
-| Vercel | Deployment |
-
----
-
-## Design Philosophy
-
-The project is influenced by:
-
-- Swiss International Style
-- Editorial magazine layouts
-- Kinetic typography
-- Motion graphics
-- Minimalist web experiences
-
-Every visual decision prioritizes rhythm, spacing, and typography over decorative imagery.
-
----
-
-## Project Structure
-
-```text
+``` text
 src/
+├── App.tsx
 ├── components/
-├── hooks/
+│   ├── PosterComposition.tsx
+│   ├── SwissPosterArt.tsx
+│   ├── Controls.tsx
+│   ├── Timeline.tsx
+│   ├── SettingsPanel.tsx
+│   └── ...
+├── config/
+│   └── composition.ts
 ├── data/
-├── styles/
-├── utils/
-└── App.tsx
+│   ├── lyrics.ts
+│   └── metadata.json
+├── engine/
+│   └── CompositionEngine.ts
+├── hooks/
+│   ├── useAudio.ts
+│   ├── useMouseTracking.ts
+│   └── useParallax.ts
+└── utils/
+    └── seededRandom.ts
 ```
 
----
+For a plain-language explanation of the architecture, see
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-## Local Development
+For the visual generation system, see
+[`docs/GENERATIVE-COMPOSITION.md`](docs/GENERATIVE-COMPOSITION.md).
 
-```bash
-git clone https://github.com/yourusername/robinson.git
+For development and troubleshooting, see
+[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
-cd robinson
+------------------------------------------------------------------------
 
+## Running the Project
+
+Install dependencies:
+
+``` bash
 npm install
+```
 
+Start the development server:
+
+``` bash
 npm run dev
 ```
 
----
+Create a production build:
+
+``` bash
+npm run build
+```
+
+Run the project locally before deploying whenever possible. This catches
+TypeScript and build errors before they reach Vercel.
+
+------------------------------------------------------------------------
+
+## Deployment
+
+Robinson can be deployed to Vercel.
+
+The usual workflow is:
+
+``` bash
+git add .
+git commit -m "Describe the change"
+git push
+```
+
+Vercel can then build and deploy the pushed project.
+
+If a deployment fails, read the first TypeScript or ESLint error in the
+build output. Warnings, such as Node deprecation warnings, are normally
+not the reason a build stopped.
+
+------------------------------------------------------------------------
+
+## Design Principle
+
+Robinson should feel designed rather than randomly decorated.
+
+When adding or changing a visual composition, prioritize:
+
+1.  hierarchy
+2.  readability
+3.  spatial balance
+4.  meaningful shape relationships
+5.  color contrast
+6.  variation between lyrics
+7.  smooth motion
+
+Avoid adding shapes simply to fill empty space. A shape should have a
+reason to exist in the composition.
+
+------------------------------------------------------------------------
+
+## Documentation
+
+The `docs/` folder contains the project documentation:
+
+-   `ARCHITECTURE.md` --- how the application is organized
+-   `GENERATIVE-COMPOSITION.md` --- how lyric-driven visual generation
+    works
+-   `VISUAL-SYSTEM.md` --- design rules and visual principles
+-   `DEVELOPMENT.md` --- setup, editing, testing, and troubleshooting
+-   `LYRICS-AND-DATA.md` --- how lyric data is used
+-   `MAINTENANCE.md` --- practical guidance for safely changing the
+    project
+
+------------------------------------------------------------------------
 
 ## License
 
-Released under the MIT License.*
+Released under the MIT License.
